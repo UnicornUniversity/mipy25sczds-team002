@@ -5,6 +5,7 @@ from utils.constants import (
     BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT,
     ZOMBIE_HEALTH, ZOMBIE_DAMAGE, ZOMBIE_ATTACK_COOLDOWN,
     TOUGH_ZOMBIE_HEALTH, TOUGH_ZOMBIE_DAMAGE, TOUGH_ZOMBIE_SPEED,
+    ZOMBIE_ATTACK_RANGE, ZOMBIE_ATTACK_DURATION, ZOMBIE_ATTACK_KNOCKBACK,
     RED
 )
 from utils.sprite_loader import get_sprite, get_texture
@@ -25,6 +26,8 @@ class Zombie(Entity):
         self.map_generator = None  # Will be set by GameplayState
         self.health = ZOMBIE_HEALTH
         self.attack_timer = 0  # Timer for attack cooldown
+        self.is_attacking = False  # Flag for attack animation
+        self.attack_animation_timer = 0  # Timer for attack animation
 
         # Animation tracking for sprites
         self.animation_time = 0
@@ -53,6 +56,12 @@ class Zombie(Entity):
         if self.attack_timer > 0:
             self.attack_timer -= dt
 
+        # Update attack animation
+        if self.is_attacking:
+            self.attack_animation_timer -= dt
+            if self.attack_animation_timer <= 0:
+                self.is_attacking = False
+
         # Calculate direction vector to player
         dx = player_x - self.x
         dy = player_y - self.y
@@ -74,14 +83,32 @@ class Zombie(Entity):
         # Reset movement flag
         self.is_moving = False
 
-        # Only move if not already at player position
-        if distance > 5:  # Small threshold to prevent jittering
+        # Only move if not already at player position and not attacking
+        if distance > 5 and not self.is_attacking:  # Small threshold to prevent jittering
             dx /= distance
             dy /= distance
 
-            # Move towards player with potentially reduced speed
-            self.x += dx * base_speed * dt
-            self.y += dy * base_speed * dt
+            # Store previous position for collision response
+            prev_x, prev_y = self.x, self.y
+
+            # Try to move in x direction
+            new_x = self.x + dx * base_speed * dt
+            if self.map_generator and not self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
+                # If x movement would cause collision, try to slide along the wall
+                if self.map_generator.is_walkable(self.x + self.width // 2, new_x + self.height // 2):
+                    self.y += dy * base_speed * dt
+            else:
+                self.x = new_x
+
+            # Try to move in y direction
+            new_y = self.y + dy * base_speed * dt
+            if self.map_generator and not self.map_generator.is_walkable(self.x + self.width // 2, new_y + self.height // 2):
+                # If y movement would cause collision, try to slide along the wall
+                if self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
+                    self.x += dx * base_speed * dt
+            else:
+                self.y = new_y
+
             self.is_moving = True
 
             # Update facing direction based on horizontal movement
@@ -112,11 +139,29 @@ class Zombie(Entity):
             bool: True if attack was successful, False otherwise
         """
         if self.attack_timer <= 0:
-            # Reset attack timer
-            self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
+            # Calculate distance to player
+            dx = player.x - self.x
+            dy = player.y - self.y
+            distance = math.sqrt(dx * dx + dy * dy)
 
-            # Deal damage to player
-            return player.take_damage(ZOMBIE_DAMAGE)
+            # Only attack if within range
+            if distance <= ZOMBIE_ATTACK_RANGE:
+                # Start attack animation
+                self.is_attacking = True
+                self.attack_animation_timer = ZOMBIE_ATTACK_DURATION
+
+                # Reset attack timer
+                self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
+
+                # Deal damage to player
+                if player.take_damage(ZOMBIE_DAMAGE):
+                    # Apply knockback to player
+                    if distance > 0:  # Avoid division by zero
+                        knockback_x = dx / distance * ZOMBIE_ATTACK_KNOCKBACK
+                        knockback_y = dy / distance * ZOMBIE_ATTACK_KNOCKBACK
+                        player.x += knockback_x
+                        player.y += knockback_y
+                    return True
 
         return False
 
@@ -191,7 +236,18 @@ class Zombie(Entity):
                     wobble_offset = int(1 * abs(math.sin(self.animation_time * 4)))
                     sprite_x += wobble_offset
 
-                screen.blit(rotated_sprite, (sprite_x, sprite_y))
+                # Add attack animation
+                if self.is_attacking:
+                    # Scale up slightly during attack
+                    scale = 1.2
+                    scaled_sprite = pygame.transform.scale(sprite,
+                        (int(sprite.get_width() * scale), int(sprite.get_height() * scale)))
+                    # Center the scaled sprite
+                    sprite_x -= (scaled_sprite.get_width() - sprite.get_width()) // 2
+                    sprite_y -= (scaled_sprite.get_height() - sprite.get_height()) // 2
+                    screen.blit(scaled_sprite, (sprite_x, sprite_y))
+                else:
+                    screen.blit(rotated_sprite, (sprite_x, sprite_y))
         else:
             # Fallback: draw circle if sprite not available
             if self.is_on_object:
