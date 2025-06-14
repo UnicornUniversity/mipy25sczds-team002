@@ -1,0 +1,18 @@
+Index: .idea/mipy25sczds-team002.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<module type=\"PYTHON_MODULE\" version=\"4\">\r\n  <component name=\"NewModuleRootManager\">\r\n    <content url=\"file://$MODULE_DIR$\">\r\n      <sourceFolder url=\"file://$MODULE_DIR$/src\" isTestSource=\"false\" />\r\n    </content>\r\n    <orderEntry type=\"jdk\" jdkName=\"Python 3.11\" jdkType=\"Python SDK\" />\r\n    <orderEntry type=\"sourceFolder\" forTests=\"false\" />\r\n  </component>\r\n</module>
+===================================================================
+diff --git a/.idea/mipy25sczds-team002.iml b/.idea/mipy25sczds-team002.iml
+--- a/.idea/mipy25sczds-team002.iml	(revision 1b1cd36c12f5fc6240dd9759793c1879743a3b73)
++++ b/.idea/mipy25sczds-team002.iml	(date 1749917131974)
+@@ -7,4 +7,8 @@
+     <orderEntry type="jdk" jdkName="Python 3.11" jdkType="Python SDK" />
+     <orderEntry type="sourceFolder" forTests="false" />
+   </component>
++  <component name="PyDocumentationSettings">
++    <option name="format" value="PLAIN" />
++    <option name="myDocStringFormat" value="Plain" />
++  </component>
+ </module>
+\ No newline at end of file

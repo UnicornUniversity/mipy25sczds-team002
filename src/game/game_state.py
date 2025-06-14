@@ -6,6 +6,8 @@ from entities.zombies import Zombie, ToughZombie
 from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
 from systems.audio import play_menu_music, play_gameplay_music, stop_music, toggle_music, toggle_sfx, set_music_volume, set_sfx_volume
+from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
+from systems.zombie_spawner import ZombieSpawner
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
@@ -115,7 +117,7 @@ class MenuState(GameState):
         self.title_text = self.font.render("DEADLOCK", True, (255, 255, 255))
         self.subtitle_font = pygame.font.Font(None, 36)
         self.subtitle_text = self.subtitle_font.render("Press SPACE to start", True, (200, 200, 200))
-        
+
         # Music controls info
         self.info_font = pygame.font.Font(None, 24)
         self.music_info = [
@@ -125,7 +127,7 @@ class MenuState(GameState):
             "[ - Decrease Music Volume",
             "] - Increase Music Volume"
         ]
-        
+
         self.music_started = False
 
     def update(self, dt):
@@ -164,7 +166,7 @@ class MenuState(GameState):
 
         screen.blit(self.title_text, title_rect)
         screen.blit(self.subtitle_text, subtitle_rect)
-        
+
         # Render music controls info
         y_offset = screen_rect.centery + 50
         for line in self.music_info:
@@ -172,7 +174,7 @@ class MenuState(GameState):
             info_rect = info_text.get_rect(center=(screen_rect.centerx, y_offset))
             screen.blit(info_text, info_rect)
             y_offset += 30
-        
+
         # Show current music status
         from systems.audio import music_manager
         status_lines = [
@@ -180,7 +182,7 @@ class MenuState(GameState):
             f"Music Volume: {int(music_manager.music_volume * 100)}%",
             f"SFX Volume: {int(music_manager.sfx_volume * 100)}%"
         ]
-        
+
         y_offset += 20
         for line in status_lines:
             status_text = self.info_font.render(line, True, (100, 255, 100))
@@ -214,17 +216,14 @@ class GameplayState(GameState):
         self.camera_x = 0
         self.camera_y = 0
 
-        # Create a list to store zombies
-        self.zombies = []
-
-        # Create three test zombies at random positions away from the player
-        for _ in range(3):
-            self._spawn_zombie()
+        # Create zombie spawner
+        self.zombie_spawner = ZombieSpawner(self.map_generator)
 
         # Create a list to store items
         self.items = []
 
-        # Spawn random weapons around the map
+        # Initialize weapons list
+        self.weapons = []
         self._spawn_random_weapons(5)  # Spawn 5 random weapons
 
         # Create a list to store bullets
@@ -243,7 +242,7 @@ class GameplayState(GameState):
 
         # Visual effects
         self.effects = []
-        
+
         # Music state
         self.gameplay_music_started = False
 
@@ -436,12 +435,17 @@ class GameplayState(GameState):
         if not self.gameplay_music_started:
             play_gameplay_music()
             self.gameplay_music_started = True
-            
+
         # Update player with map_generator reference
         self.player.update(dt, self.map_generator)
 
         # Handle continuous firing for assault rifle
-        if self.left_mouse_down and self.player.weapon and hasattr(self.player.weapon, 'name') and self.player.weapon.name == "Assault Rifle":
+        if (
+            self.left_mouse_down and
+            self.player.weapon and
+            hasattr(self.player.weapon, 'name') and
+            self.player.weapon.name == "Assault Rifle"
+        ):
             result = self.player.shoot()
             if result:
                 # Handle different return types from different weapons
@@ -455,19 +459,21 @@ class GameplayState(GameState):
                 # Add muzzle flash effect
                 self._add_muzzle_flash_effect()
 
-        # Update zombies with map_generator reference and check for collisions
-        zombies_to_remove = []
-        for i, zombie in enumerate(self.zombies):
+        # Update zombie spawner
+        self.zombie_spawner.update(dt, self.player.x, self.player.y)
+
+        # Update zombies with map_generator reference
+        for i, zombie in enumerate(self.zombie_spawner.get_zombies()):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
             # Check for zombie-zombie collisions
-            for j, other_zombie in enumerate(self.zombies):
+            for j, other_zombie in enumerate(self.zombie_spawner.get_zombies()):
                 if i != j:  # Don't check collision with self
                     # Calculate distance between zombie centers
                     dx = (zombie.x + zombie.width/2) - (other_zombie.x + other_zombie.width/2)
                     dy = (zombie.y + zombie.height/2) - (other_zombie.y + other_zombie.height/2)
                     distance = math.sqrt(dx * dx + dy * dy)
-                    
+
                     # If zombies are too close, push them apart
                     min_distance = ZOMBIE_COLLISION_RADIUS * 2
                     if distance < min_distance:
@@ -476,7 +482,7 @@ class GameplayState(GameState):
                             push_x = dx / distance
                             push_y = dy / distance
                             push_force = (min_distance - distance) * 0.5
-                            
+
                             # Move zombies apart
                             zombie.x += push_x * push_force
                             zombie.y += push_y * push_force
@@ -508,7 +514,7 @@ class GameplayState(GameState):
                 continue
 
             # Check for collision with zombies
-            for j, zombie in enumerate(self.zombies):
+            for j, zombie in enumerate(self.zombie_spawner.get_zombies()):
                 if self._check_collision(bullet, zombie):
                     # Bullet hit zombie
                     zombie_died = zombie.take_damage(bullet.damage)
@@ -531,9 +537,6 @@ class GameplayState(GameState):
 
         # Remove expired or collided bullets
         self.bullets = [b for i, b in enumerate(self.bullets) if i not in bullets_to_remove]
-
-        # Remove dead zombies
-        self.zombies = [zombie for zombie in self.zombies if not zombie.is_dead()]
 
         # Check for item pickups
         for item in self.items:
@@ -601,7 +604,7 @@ class GameplayState(GameState):
             bullet.render(screen, camera_offset)
 
         # Draw zombies with camera offset
-        for zombie in self.zombies:
+        for zombie in self.zombie_spawner.get_zombies():
             zombie.render(screen, camera_offset)
 
         # Draw player with camera offset
@@ -692,7 +695,7 @@ class GameplayState(GameState):
         # Get music status for debug info
         from systems.audio import music_manager
         music_status = music_manager.get_status()
-        
+
         # Create debug text lines
         debug_lines = [
             f"FPS: {fps:.1f}",
@@ -701,7 +704,9 @@ class GameplayState(GameState):
             f"Tile Position: ({int(self.player.x // TILE_SIZE)}, {int(self.player.y // TILE_SIZE)})",
             f"On Object: {self.player.is_on_object}",
             f"Speed Multiplier: {self.player.debug_speed_multiplier:.1f}",
-            f"Zombies: {len(self.zombies)}",
+            f"Active Zombies: {len(self.zombie_spawner.get_zombies())}",
+            f"Game Time: {self.zombie_spawner.game_time:.1f}s",
+            f"Spawn Rate: {self.zombie_spawner._calculate_spawn_rate():.1f}s",
             f"Items: {len(self.items)}",
             f"Bullets: {len(self.bullets)}",
             f"Effects: {len(self.effects)}",
@@ -721,26 +726,40 @@ class GameplayState(GameState):
             screen.blit(debug_text, (10, y_offset))
             y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
 
+    def _spawn_random_weapons(self, count):
+        """Spawn random weapons around the map"""
+        for _ in range(count):
+            # Find a random walkable position
+            while True:
+                x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
+                y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
+                if self.map_generator.is_walkable(x, y):
+                    break
+
+            # Create a random weapon at the position
+            weapon = Weapon(x, y)
+            self.weapons.append(weapon)
+
     def _handle_game_over(self):
         """Handle game over state"""
         # Clear all zombies and bullets
         self.zombies.clear()
         self.bullets.clear()
-        
+
         # Reset player health
         self.player.health = PLAYER_MAX_HEALTH
-        
+
         # Reset player position to center of map
         center_x = (TILE_SIZE * MAP_WIDTH) // 2
         center_y = (TILE_SIZE * MAP_HEIGHT) // 2
         player_x, player_y = self._find_walkable_position(center_x, center_y)
         self.player.x = player_x
         self.player.y = player_y
-        
+
         # Spawn new zombies
         for _ in range(3):
             self._spawn_zombie()
-            
+
         # Add game over message
         self.pickup_message = "Game Over! You died and respawned."
         self.pickup_timer = PICKUP_NOTIFICATION_DURATION
