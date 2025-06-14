@@ -87,7 +87,8 @@ class GameplayState(GameState):
         # Create a list to store items
         self.items = []
 
-        # Spawn random weapons around the map
+        # Initialize weapons list
+        self.weapons = []
         self._spawn_random_weapons(5)  # Spawn 5 random weapons
 
         # Create a list to store bullets
@@ -228,13 +229,13 @@ class GameplayState(GameState):
         # Update player with map_generator reference
         self.player.update(dt, self.map_generator)
 
-        # Update zombie spawner
-        self.zombie_spawner.update(dt, self.player.x, self.player.y)
-
-        # Update zombies with map_generator reference
-        for zombie in self.zombie_spawner.get_zombies():
         # Handle continuous firing for assault rifle
-        if self.left_mouse_down and self.player.weapon and hasattr(self.player.weapon, 'name') and self.player.weapon.name == "Assault Rifle":
+        if (
+            self.left_mouse_down and
+            self.player.weapon and
+            hasattr(self.player.weapon, 'name') and
+            self.player.weapon.name == "Assault Rifle"
+        ):
             result = self.player.shoot()
             if result:
                 # Handle different return types from different weapons
@@ -248,9 +249,11 @@ class GameplayState(GameState):
                 # Add muzzle flash effect
                 self._add_muzzle_flash_effect()
 
-        # Update zombies with map_generator reference and check for collisions
-        zombies_to_remove = []
-        for i, zombie in enumerate(self.zombies):
+        # Update zombie spawner
+        self.zombie_spawner.update(dt, self.player.x, self.player.y)
+
+        # Update zombies with map_generator reference
+        for zombie in self.zombie_spawner.get_zombies():
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
         # Update bullets and check for collisions
@@ -288,9 +291,6 @@ class GameplayState(GameState):
 
         # Remove expired or collided bullets
         self.bullets = [b for i, b in enumerate(self.bullets) if i not in bullets_to_remove]
-
-        # Remove dead zombies
-        self.zombies = [zombie for zombie in self.zombies if not zombie.is_dead()]
 
         # Check for item pickups
         for item in self.items:
@@ -471,6 +471,20 @@ class GameplayState(GameState):
             debug_text = self.debug_font.render(line, True, DEBUG_TEXT_COLOR)
             screen.blit(debug_text, (10, y_offset))
             y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
+
+    def _spawn_random_weapons(self, count):
+        """Spawn random weapons around the map"""
+        for _ in range(count):
+            # Find a random walkable position
+            while True:
+                x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
+                y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
+                if self.map_generator.is_walkable(x, y):
+                    break
+
+            # Create a random weapon at the position
+            weapon = Weapon(x, y)
+            self.weapons.append(weapon)
 
 
 class GameStateManager:
