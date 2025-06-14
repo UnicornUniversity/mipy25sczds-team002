@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 from entities.entity import Entity
+from systems import collisions
 from utils.constants import (
     BULLET_SIZE, BULLET_SPEED, BULLET_COLOR,
     # Pistol constants
@@ -356,8 +357,8 @@ class Bullet(Entity):
         # Update distance traveled
         self.distance_traveled += math.sqrt(dx * dx + dy * dy)
 
-        # Check for collision with map if map_generator is provided
-        if map_generator and not map_generator.is_walkable(self.x, self.y):
+        # Check for collision with map using the collision system
+        if not collisions.is_position_walkable(self.x, self.y):
             self.distance_traveled = self.max_distance  # Mark for removal
 
         # Call parent update to update rect

@@ -2,13 +2,14 @@ import pygame
 import math
 from entities.entity import Entity
 from utils.constants import (
-    BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT,
+    BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, TILE_GRASS,
     ZOMBIE_HEALTH, ZOMBIE_DAMAGE, ZOMBIE_ATTACK_COOLDOWN,
     TOUGH_ZOMBIE_HEALTH, TOUGH_ZOMBIE_DAMAGE, TOUGH_ZOMBIE_SPEED,
     ZOMBIE_ATTACK_RANGE, ZOMBIE_ATTACK_DURATION, ZOMBIE_ATTACK_KNOCKBACK,
     RED
 )
 from utils.sprite_loader import get_sprite, get_texture
+from systems import collisions
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -88,26 +89,9 @@ class Zombie(Entity):
             dx /= distance
             dy /= distance
 
-            # Store previous position for collision response
-            prev_x, prev_y = self.x, self.y
-
-            # Try to move in x direction
-            new_x = self.x + dx * base_speed * dt
-            if self.map_generator and not self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
-                # If x movement would cause collision, try to slide along the wall
-                if self.map_generator.is_walkable(self.x + self.width // 2, new_x + self.height // 2):
-                    self.y += dy * base_speed * dt
-            else:
-                self.x = new_x
-
-            # Try to move in y direction
-            new_y = self.y + dy * base_speed * dt
-            if self.map_generator and not self.map_generator.is_walkable(self.x + self.width // 2, new_y + self.height // 2):
-                # If y movement would cause collision, try to slide along the wall
-                if self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
-                    self.x += dx * base_speed * dt
-            else:
-                self.y = new_y
+            # Use the collision system to resolve movement with wall collision detection
+            new_x, new_y, collided = collisions.resolve_movement(self, dx, dy, dt, base_speed)
+            self.x, self.y = new_x, new_y
 
             self.is_moving = True
 
@@ -204,7 +188,7 @@ class Zombie(Entity):
         center_y = screen_y + self.height // 2
 
         # Get zombie sprite from texture atlas
-        sprite = get_texture('zombie', 'zoimbie1_stand')
+        sprite = get_texture('zombie', 'zoimbie1_hold')
         if not sprite:
             # Fallback to old sprite system
             sprite = get_sprite('zombie_basic_1')

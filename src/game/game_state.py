@@ -8,6 +8,7 @@ from game.map_generator import MapGenerator
 from systems.audio import play_menu_music, play_gameplay_music, stop_music, toggle_music, toggle_sfx, set_music_volume, set_sfx_volume
 from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
 from systems.zombie_spawner import ZombieSpawner
+from systems import collisions
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
@@ -204,6 +205,9 @@ class GameplayState(GameState):
         # Create the map generator
         self.map_generator = MapGenerator()
 
+        # Initialize the collision system
+        collisions.initialize(self.map_generator)
+
         # Find a walkable tile near the center for the player
         center_x = (TILE_SIZE * MAP_WIDTH) // 2
         center_y = (TILE_SIZE * MAP_HEIGHT) // 2
@@ -245,6 +249,9 @@ class GameplayState(GameState):
 
         # Music state
         self.gameplay_music_started = False
+
+        # Weapon spawn timer
+        self.weapon_spawn_timer = 60.0  # Spawn a new weapon every 60 seconds
 
     def _find_walkable_position(self, center_x, center_y):
         """Find a walkable position near the specified center coordinates"""
@@ -307,16 +314,33 @@ class GameplayState(GameState):
             # Find a random walkable position on the map
             self._spawn_random_item()
 
-    def _spawn_random_item(self, near_player=False, weapon_type=None):
-        """Spawn a random item at a random position on the map
+    def _spawn_random_item(self, near_player=False, weapon_type=None, position=None):
+        """Spawn a random item at a random position on the map or at a specific position
 
         Args:
             near_player (bool): Whether to spawn the item near the player
             weapon_type (str, optional): Specific weapon type to spawn
+            position (tuple, optional): Specific position (x, y) to spawn the item at
 
         Returns:
             Item: The spawned item, or None if no suitable position was found
         """
+        # If a specific position is provided, use it directly
+        if position:
+            x, y = position
+            # Ensure position is within map bounds
+            x = max(0, min(x, MAP_WIDTH * TILE_SIZE - TILE_SIZE))
+            y = max(0, min(y, MAP_HEIGHT * TILE_SIZE - TILE_SIZE))
+
+            # Check if position is walkable
+            if self.map_generator.is_walkable(x, y):
+                # Create a random item at this position
+                item = Item.create_random_item(x, y, weapon_type)
+                self.items.append(item)
+                return item
+            return None
+
+        # Otherwise, calculate a random position
         if near_player:
             # Find a position within 10 tiles of the player
             max_distance = 10 * TILE_SIZE
@@ -466,28 +490,9 @@ class GameplayState(GameState):
         for i, zombie in enumerate(self.zombie_spawner.get_zombies()):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
-            # Check for zombie-zombie collisions
-            for j, other_zombie in enumerate(self.zombie_spawner.get_zombies()):
-                if i != j:  # Don't check collision with self
-                    # Calculate distance between zombie centers
-                    dx = (zombie.x + zombie.width/2) - (other_zombie.x + other_zombie.width/2)
-                    dy = (zombie.y + zombie.height/2) - (other_zombie.y + other_zombie.height/2)
-                    distance = math.sqrt(dx * dx + dy * dy)
-
-                    # If zombies are too close, push them apart
-                    min_distance = ZOMBIE_COLLISION_RADIUS * 2
-                    if distance < min_distance:
-                        # Calculate push direction and force
-                        if distance > 0:  # Avoid division by zero
-                            push_x = dx / distance
-                            push_y = dy / distance
-                            push_force = (min_distance - distance) * 0.5
-
-                            # Move zombies apart
-                            zombie.x += push_x * push_force
-                            zombie.y += push_y * push_force
-                            other_zombie.x -= push_x * push_force
-                            other_zombie.y -= push_y * push_force
+            # Check for zombie-zombie collisions using the collision system
+            new_x, new_y = collisions.check_zombie_collisions(zombie, self.zombie_spawner.get_zombies())
+            zombie.x, zombie.y = new_x, new_y
 
             # Check for collision with player
             if self._check_collision(zombie, self.player):
@@ -521,6 +526,15 @@ class GameplayState(GameState):
 
                     # Add blood splatter effect
                     self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
+
+                    # If zombie died, remove it from the zombie spawner and possibly drop a weapon
+                    if zombie_died:
+                        self.zombie_spawner.remove_zombie(zombie)
+
+                        # Small chance (10%) for zombie to drop a weapon when it dies
+                        if random.random() < 0.1:  # 10% chance
+                            # Spawn a weapon at the zombie's position
+                            self._spawn_random_item(near_player=False, weapon_type=None, position=(zombie.x, zombie.y))
 
                     # Mark bullet for removal
                     bullets_to_remove.append(i)
@@ -560,6 +574,9 @@ class GameplayState(GameState):
 
         # Remove finished effects
         self.effects = [e for i, e in enumerate(self.effects) if i not in effects_to_remove]
+
+        # Automatic weapon spawning is disabled
+        # Weapons are now dropped by zombies when they die
 
         # Update camera position to follow player (with smoothing)
         target_camera_x = self.player.x - WINDOW_WIDTH // 2
@@ -642,13 +659,8 @@ class GameplayState(GameState):
         Returns:
             bool: True if entities are colliding, False otherwise
         """
-        # Calculate distance between entity centers
-        dx = entity1.x + entity1.width/2 - (entity2.x + entity2.width/2)
-        dy = entity1.y + entity1.height/2 - (entity2.y + entity2.height/2)
-        distance = (dx * dx + dy * dy) ** 0.5
-
-        # Check if distance is less than sum of radii (using width as diameter)
-        return distance < (entity1.width + entity2.width) / 2
+        # Use the centralized collision system
+        return collisions.check_entity_collision(entity1, entity2)
 
     def _add_muzzle_flash_effect(self):
         """Add a muzzle flash effect at the player's weapon position"""
@@ -743,26 +755,7 @@ class GameplayState(GameState):
     def _handle_game_over(self):
         """Handle game over state"""
         # Clear all zombies and bullets
-        self.zombies.clear()
-        self.bullets.clear()
-
-        # Reset player health
-        self.player.health = PLAYER_MAX_HEALTH
-
-        # Reset player position to center of map
-        center_x = (TILE_SIZE * MAP_WIDTH) // 2
-        center_y = (TILE_SIZE * MAP_HEIGHT) // 2
-        player_x, player_y = self._find_walkable_position(center_x, center_y)
-        self.player.x = player_x
-        self.player.y = player_y
-
-        # Spawn new zombies
-        for _ in range(3):
-            self._spawn_zombie()
-
-        # Add game over message
-        self.pickup_message = "Game Over! You died and respawned."
-        self.pickup_timer = PICKUP_NOTIFICATION_DURATION
+        print("Gme Over vole")
 
 
 class GameStateManager:

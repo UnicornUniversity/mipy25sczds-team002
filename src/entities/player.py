@@ -4,6 +4,7 @@ from entities.entity import Entity
 from systems.weapons import Pistol
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
 from utils.sprite_loader import get_sprite, get_texture
+from systems import collisions
 
 
 class Player(Entity):
@@ -80,23 +81,30 @@ class Player(Entity):
         # Reset movement flag
         self.is_moving = False
 
-        # Move player based on arrow keys or WASD and track direction
+        # Calculate movement direction based on arrow keys or WASD
+        dx = 0
+        dy = 0
+
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.x -= base_speed * dt
-            self.is_moving = True
+            dx -= 1
             self.facing_left = True  # Facing left
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.x += base_speed * dt
-            self.is_moving = True
+            dx += 1
             self.facing_left = False  # Facing right
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.y -= base_speed * dt
-            self.is_moving = True
+            dy -= 1
             # Don't change horizontal facing for vertical movement
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.y += base_speed * dt
-            self.is_moving = True
+            dy += 1
             # Don't change horizontal facing for vertical movement
+
+        # Use the collision system to resolve movement with wall collision detection
+        if dx != 0 or dy != 0:
+            self.is_moving = True
+            new_x, new_y, collided = collisions.resolve_movement(self, dx, dy, dt, base_speed)
+            self.x, self.y = new_x, new_y
+        else:
+            self.is_moving = False
 
         # Update animation time
         if self.is_moving:
@@ -177,14 +185,19 @@ class Player(Entity):
         Returns:
             Bullet or None: A new bullet if shot was successful, None otherwise
         """
-        if self.weapon and self.weapon.can_shoot():
-            # Calculate bullet spawn position (slightly in front of player in aim direction)
-            spawn_distance = self.width // 2 + 5  # 5 pixels in front of player edge
-            spawn_x = self.x + self.width // 2 + math.cos(self.aim_angle) * spawn_distance
-            spawn_y = self.y + self.height // 2 + math.sin(self.aim_angle) * spawn_distance
+        if self.weapon:
+            # Auto-reload if magazine is empty and not already reloading
+            if self.weapon.ammo <= 0 and not self.weapon.is_reloading:
+                self.weapon.reload()
 
-            # Shoot the weapon
-            return self.weapon.shoot(spawn_x, spawn_y, self.aim_angle)
+            if self.weapon.can_shoot():
+                # Calculate bullet spawn position (slightly in front of player in aim direction)
+                spawn_distance = self.width // 2 + 5  # 5 pixels in front of player edge
+                spawn_x = self.x + self.width // 2 + math.cos(self.aim_angle) * spawn_distance
+                spawn_y = self.y + self.height // 2 + math.sin(self.aim_angle) * spawn_distance
+
+                # Shoot the weapon
+                return self.weapon.shoot(spawn_x, spawn_y, self.aim_angle)
 
         return None
 
@@ -204,7 +217,11 @@ class Player(Entity):
         center_y = screen_y + self.height // 2
 
         # Get player weapon sprite that rotates with aim
-        weapon_sprite = get_texture('survivor', 'survivor1_machine')
+        # Use reload sprite if player is reloading
+        if self.weapon and self.weapon.is_reloading:
+            weapon_sprite = get_texture('survivor', 'survivor1_reload')
+        else:
+            weapon_sprite = get_texture('survivor', 'survivor1_machine')
 
         # We'll use the weapon sprite as the main player sprite
         if weapon_sprite:

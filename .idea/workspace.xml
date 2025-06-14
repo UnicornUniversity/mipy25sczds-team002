@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/map_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/map_generator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/collisions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/collisions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/weapons.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/weapons.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,7 +28,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="main" />
+        <entry key="$PROJECT_DIR$" value="alex-spawn" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -52,7 +60,7 @@
     "Python.main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "#28 on alex-spawn",
+    "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon",
@@ -104,6 +112,7 @@
       <list>
         <item itemvalue="Python.main" />
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
   </component>
@@ -129,7 +138,7 @@
       <workItem from="1749915106613" duration="1745000" />
       <workItem from="1749916876064" duration="168000" />
       <workItem from="1749917055824" duration="411000" />
-      <workItem from="1749917479841" duration="351000" />
+      <workItem from="1749917479841" duration="1833000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -219,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749917561480</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings.">
+      <option name="closed" value="true" />
+      <created>1749917961480</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1749917961480</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -248,9 +265,10 @@
     <MESSAGE value="Implement texture atlas system: add `TextureAtlas` for efficient sprite management, refactor `AssetManager` to integrate the atlas, introduce backward compatibility for legacy sprite access, update extraction logic for organized sprite loading from spritesheets, and enhance debugging support with new utilities." />
     <MESSAGE value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
     <MESSAGE value="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
-    <option name="LAST_COMMIT_MESSAGE" value="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
+    <MESSAGE value="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings." />
+    <option name="LAST_COMMIT_MESSAGE" value="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749917300574" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749920384655" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

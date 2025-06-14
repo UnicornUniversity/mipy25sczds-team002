@@ -224,8 +224,8 @@ class MapGenerator:
         """Check if the specified world coordinates are walkable"""
         tile_type = self.get_tile_at(x, y)
 
-        # Only grass is walkable
-        return tile_type == TILE_GRASS
+        # Grass, objects, and wood (floor inside buildings) are walkable
+        return tile_type == TILE_GRASS or tile_type == TILE_OBJECT or tile_type == TILE_WOOD
 
     def render(self, screen, camera_offset):
         """Render the map to the screen with the specified camera offset"""
