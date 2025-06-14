@@ -1,5 +1,7 @@
 import pygame
+import random
 from entities.player import Player
+from entities.zombies import Zombie
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, DOT_SIZE, DOT_SPACING, 
     GRAY, CAMERA_LERP, BLACK
@@ -58,6 +60,13 @@ class GameplayState(GameState):
         self.camera_x = 0
         self.camera_y = 0
 
+        # Create a list to store zombies
+        self.zombies = []
+
+        # Create three test zombies at random positions away from the player
+        for _ in range(3):
+            self._spawn_zombie()
+
         # Create background dots surface
         # Make it 3x the screen size to allow for camera movement
         bg_width = WINDOW_WIDTH * 3
@@ -70,6 +79,23 @@ class GameplayState(GameState):
             for y in range(0, bg_height, DOT_SPACING):
                 pygame.draw.circle(self.background, GRAY, (x, y), DOT_SIZE)
 
+    def _spawn_zombie(self):
+        """Spawn a zombie at a random position away from the player"""
+        # Choose a random position at least 200 pixels away from the player
+        while True:
+            x = random.randint(0, WINDOW_WIDTH * 2)
+            y = random.randint(0, WINDOW_HEIGHT * 2)
+
+            # Calculate distance to player
+            dx = x - self.player.x
+            dy = y - self.player.y
+            distance = (dx * dx + dy * dy) ** 0.5
+
+            # If far enough away, create the zombie
+            if distance > 200:
+                self.zombies.append(Zombie(x, y))
+                break
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -79,6 +105,10 @@ class GameplayState(GameState):
     def update(self, dt):
         # Update player
         self.player.update(dt)
+
+        # Update zombies
+        for zombie in self.zombies:
+            zombie.update(dt, self.player.x, self.player.y)
 
         # Update camera position to follow player (with smoothing)
         target_camera_x = self.player.x - WINDOW_WIDTH // 2
@@ -95,6 +125,10 @@ class GameplayState(GameState):
         # We need to blit a portion of the background based on camera position
         screen.blit(self.background, (0, 0), 
                    (camera_offset[0], camera_offset[1], WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        # Draw zombies with camera offset
+        for zombie in self.zombies:
+            zombie.render(screen, camera_offset)
 
         # Draw player with camera offset
         self.player.render(screen, camera_offset)
