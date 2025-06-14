@@ -3,9 +3,9 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mipy-game"
+name = "deadlock"
 version = "0.1.0"
-description = "Jednoduchá hra vytvořená v Pygame pro kurz MIPY"
+description = "Deadlock - A top-down survival game created in Pygame for the MIPY course"
 requires-python = ">=3.8"
 
 # Pouze základní závislosti
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mipy-game = "main:main"
+deadlock = "main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

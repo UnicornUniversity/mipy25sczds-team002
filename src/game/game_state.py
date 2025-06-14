@@ -1,4 +1,9 @@
 import pygame
+from entities.player import Player
+from utils.constants import (
+    WINDOW_WIDTH, WINDOW_HEIGHT, DOT_SIZE, DOT_SPACING, 
+    GRAY, CAMERA_LERP, BLACK
+)
 
 
 class GameState:
@@ -22,7 +27,7 @@ class MenuState(GameState):
 
     def __init__(self):
         self.font = pygame.font.Font(None, 74)
-        self.title_text = self.font.render("MIPY GAME", True, (255, 255, 255))
+        self.title_text = self.font.render("DEADLOCK", True, (255, 255, 255))
         self.subtitle_font = pygame.font.Font(None, 36)
         self.subtitle_text = self.subtitle_font.render("Press SPACE to start", True, (200, 200, 200))
 
@@ -46,8 +51,24 @@ class GameplayState(GameState):
     """Main gameplay state"""
 
     def __init__(self):
-        self.player_x = 400
-        self.player_y = 300
+        # Create player at center of screen
+        self.player = Player(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+
+        # Camera position (top-left corner of the view)
+        self.camera_x = 0
+        self.camera_y = 0
+
+        # Create background dots surface
+        # Make it 3x the screen size to allow for camera movement
+        bg_width = WINDOW_WIDTH * 3
+        bg_height = WINDOW_HEIGHT * 3
+        self.background = pygame.Surface((bg_width, bg_height))
+        self.background.fill(BLACK)
+
+        # Draw dots on the background
+        for x in range(0, bg_width, DOT_SPACING):
+            for y in range(0, bg_height, DOT_SPACING):
+                pygame.draw.circle(self.background, GRAY, (x, y), DOT_SIZE)
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -56,21 +77,27 @@ class GameplayState(GameState):
         return None
 
     def update(self, dt):
-        keys = pygame.key.get_pressed()
-        speed = 200  # pixelů za sekundu
+        # Update player
+        self.player.update(dt)
 
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.player_x -= speed * dt
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.player_x += speed * dt
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.player_y -= speed * dt
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.player_y += speed * dt
+        # Update camera position to follow player (with smoothing)
+        target_camera_x = self.player.x - WINDOW_WIDTH // 2
+        target_camera_y = self.player.y - WINDOW_HEIGHT // 2
+
+        self.camera_x += (target_camera_x - self.camera_x) * CAMERA_LERP
+        self.camera_y += (target_camera_y - self.camera_y) * CAMERA_LERP
 
     def render(self, screen):
-        # Draw player as a red square
-        pygame.draw.rect(screen, (255, 0, 0), (self.player_x, self.player_y, 32, 32))
+        # Calculate camera offset for rendering
+        camera_offset = (int(self.camera_x), int(self.camera_y))
+
+        # Draw background with camera offset
+        # We need to blit a portion of the background based on camera position
+        screen.blit(self.background, (0, 0), 
+                   (camera_offset[0], camera_offset[1], WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        # Draw player with camera offset
+        self.player.render(screen, camera_offset)
 
 
 class GameStateManager:

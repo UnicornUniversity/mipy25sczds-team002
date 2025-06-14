@@ -10,7 +10,7 @@ def main():
 
     # Window setup
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption("MIPY Game")
+    pygame.display.set_caption("Deadlock")
     clock = pygame.time.Clock()
 
     # Init game systems
