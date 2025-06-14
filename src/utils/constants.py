@@ -57,6 +57,12 @@ MIN_BUILDINGS = 4  # Minimum number of buildings to generate
 MAX_BUILDINGS = 7  # Maximum number of buildings to generate
 RANDOM_OBJECT_DENSITY = 0.03  # Probability of placing a random object (was 0.05)
 
+# Sprites
+SPRITE_SIZE = 64  # Size of each sprite (64x64)
+SPRITE_GAP = 10    # Gap between sprites (10 pixels)
+SPRITESHEET_COLS = 27  # Number of columns in the spritesheet
+SPRITESHEET_ROWS = 20  # Number of rows in the spritesheet
+
 # Tile types
 TILE_GRASS = 0
 TILE_OBJECT = 1  # trees, rocks, etc.

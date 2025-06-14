@@ -8,7 +8,7 @@ from utils.constants import (
     ZOMBIE_ATTACK_RANGE, ZOMBIE_ATTACK_DURATION, ZOMBIE_ATTACK_KNOCKBACK,
     RED
 )
-from utils.sprite_loader import get_sprite
+from utils.sprite_loader import get_sprite, get_texture
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -28,13 +28,16 @@ class Zombie(Entity):
         self.attack_timer = 0  # Timer for attack cooldown
         self.is_attacking = False  # Flag for attack animation
         self.attack_animation_timer = 0  # Timer for attack animation
-        
+
         # Animation tracking for sprites
         self.animation_time = 0
         self.is_moving = False
-        
+
         # Direction tracking for sprite flipping
         self.facing_left = False  # True if facing left, False if facing right
+
+        # Movement angle for sprite rotation
+        self.movement_angle = 0  # Angle in radians (0 = right, pi/2 = down)
 
     def update(self, dt, player_x, player_y, map_generator=None):
         """Update zombie state to move towards player
@@ -114,6 +117,9 @@ class Zombie(Entity):
             elif dx > 0.1:  # Moving right
                 self.facing_left = False
 
+            # Calculate movement angle for sprite rotation
+            self.movement_angle = math.atan2(dy, dx)
+
         # Update animation time
         if self.is_moving:
             self.animation_time += dt
@@ -192,29 +198,37 @@ class Zombie(Entity):
         # Calculate screen position
         screen_x = self.rect.x - camera_offset[0]
         screen_y = self.rect.y - camera_offset[1]
-        
+
         # Calculate center position (needed for both sprite and fallback rendering)
         center_x = screen_x + self.width // 2
         center_y = screen_y + self.height // 2
 
-        # Use only zombie_basic_1 sprite for consistency - always the same zombie
-        sprite = get_sprite('zombie_basic_1')
+        # Get zombie sprite from texture atlas
+        sprite = get_texture('zombie', 'zoimbie1_stand')
+        if not sprite:
+            # Fallback to old sprite system
+            sprite = get_sprite('zombie_basic_1')
 
         if sprite:
-            # Flip sprite horizontally if facing left
-            if self.facing_left:
-                sprite = pygame.transform.flip(sprite, True, False)  # Flip horizontally
+            # Apply color tint for different zombie types (implemented in subclasses)
+            sprite = self._apply_zombie_tint(sprite)
 
-            # Center the sprite on the entity position
-            sprite_x = screen_x - (sprite.get_width() - self.width) // 2
-            sprite_y = screen_y - (sprite.get_height() - self.height) // 2
+            # Convert movement angle from radians to degrees for rotation
+            rotation_angle = math.degrees(-self.movement_angle)
+
+            # Rotate the zombie sprite
+            rotated_sprite = pygame.transform.rotate(sprite, rotation_angle)
+
+            # Calculate position to center the rotated sprite on the zombie
+            sprite_x = center_x - rotated_sprite.get_width() // 2
+            sprite_y = center_y - rotated_sprite.get_height() // 2
 
             # Apply transparency if on object
             if self.is_on_object:
                 # Create a copy with alpha for transparency effect
-                sprite_copy = sprite.copy()
-                sprite_copy.set_alpha(180)  # Semi-transparent
-                screen.blit(sprite_copy, (sprite_x, sprite_y))
+                rotated_sprite_copy = rotated_sprite.copy()
+                rotated_sprite_copy.set_alpha(180)  # Semi-transparent
+                screen.blit(rotated_sprite_copy, (sprite_x, sprite_y))
             else:
                 # Optional: slight visual feedback for movement
                 if self.is_moving:
@@ -226,14 +240,14 @@ class Zombie(Entity):
                 if self.is_attacking:
                     # Scale up slightly during attack
                     scale = 1.2
-                    scaled_sprite = pygame.transform.scale(sprite, 
+                    scaled_sprite = pygame.transform.scale(sprite,
                         (int(sprite.get_width() * scale), int(sprite.get_height() * scale)))
                     # Center the scaled sprite
                     sprite_x -= (scaled_sprite.get_width() - sprite.get_width()) // 2
                     sprite_y -= (scaled_sprite.get_height() - sprite.get_height()) // 2
                     screen.blit(scaled_sprite, (sprite_x, sprite_y))
                 else:
-                    screen.blit(sprite, (sprite_x, sprite_y))
+                    screen.blit(rotated_sprite, (sprite_x, sprite_y))
         else:
             # Fallback: draw circle if sprite not available
             if self.is_on_object:
@@ -246,6 +260,18 @@ class Zombie(Entity):
             else:
                 # Draw zombie normally when not on an object
                 pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+
+    def _apply_zombie_tint(self, sprite):
+        """Apply color tint to zombie sprite based on zombie type
+
+        Args:
+            sprite (pygame.Surface): Original sprite
+
+        Returns:
+            pygame.Surface: Tinted sprite
+        """
+        # Base zombie has no tint
+        return sprite
 
 
 class ToughZombie(Zombie):
@@ -283,3 +309,24 @@ class ToughZombie(Zombie):
             return player.take_damage(TOUGH_ZOMBIE_DAMAGE)
 
         return False
+
+    def _apply_zombie_tint(self, sprite):
+        """Apply reddish tint to tough zombie sprite
+
+        Args:
+            sprite (pygame.Surface): Original sprite
+
+        Returns:
+            pygame.Surface: Tinted sprite with reddish color
+        """
+        # Create a copy of the sprite to modify
+        tinted_sprite = sprite.copy()
+
+        # Create a red overlay surface
+        red_overlay = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+        red_overlay.fill((255, 0, 0, 80))  # Semi-transparent red
+
+        # Apply the red overlay to the sprite
+        tinted_sprite.blit(red_overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+        return tinted_sprite

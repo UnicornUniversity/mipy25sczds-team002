@@ -23,11 +23,11 @@ class MuzzleFlash:
         self.y = y
         self.lifetime = 0.1  # Very short flash
         self.age = 0
-        
+
     def update(self, dt):
         self.age += dt
         return self.age < self.lifetime
-        
+
     def render(self, screen, camera_offset):
         if self.age < self.lifetime:
             # Simple yellow circle for muzzle flash
@@ -46,11 +46,11 @@ class BulletImpact:
         self.color = color
         self.lifetime = 0.2
         self.age = 0
-        
+
     def update(self, dt):
         self.age += dt
         return self.age < self.lifetime
-        
+
     def render(self, screen, camera_offset):
         if self.age < self.lifetime:
             # Simple spark effect
@@ -58,7 +58,7 @@ class BulletImpact:
             screen_y = int(self.y - camera_offset[1])
             alpha = int(255 * (1 - self.age / self.lifetime))
             color_with_alpha = (*self.color, alpha)
-            
+
             # Draw small cross for impact
             pygame.draw.line(screen, self.color, (screen_x-3, screen_y), (screen_x+3, screen_y), 2)
             pygame.draw.line(screen, self.color, (screen_x, screen_y-3), (screen_x, screen_y+3), 2)
@@ -71,11 +71,11 @@ class BloodSplatter:
         self.y = y
         self.lifetime = 0.5
         self.age = 0
-        
+
     def update(self, dt):
         self.age += dt
         return self.age < self.lifetime
-        
+
     def render(self, screen, camera_offset):
         if self.age < self.lifetime:
             # Simple red circle for blood
@@ -83,7 +83,7 @@ class BloodSplatter:
             screen_y = int(self.y - camera_offset[1])
             alpha = int(255 * (1 - self.age / self.lifetime))
             radius = int(4 + 2 * (self.age / self.lifetime))  # Growing
-            
+
             # Create surface with alpha for transparency
             blood_surface = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)
             pygame.draw.circle(blood_surface, (150, 0, 0, alpha), (radius, radius), radius)
@@ -420,6 +420,8 @@ class GameplayState(GameState):
 
             # Check if bullet has expired
             if bullet.is_expired():
+                # Add bullet impact effect when bullet expires
+                self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
                 bullets_to_remove.append(i)
                 continue
 
