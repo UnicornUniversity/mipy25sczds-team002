@@ -5,6 +5,7 @@ from utils.constants import (
     TILE_GRASS, TILE_OBJECT, TILE_WALL, TILE_WOOD,
     TILE_COLORS, MIN_BUILDINGS, MAX_BUILDINGS, RANDOM_OBJECT_DENSITY
 )
+from utils.sprite_loader import get_sprite
 from game.building_templates import SMALL_BUILDINGS, MEDIUM_BUILDINGS, LARGE_BUILDINGS, ALL_BUILDINGS
 
 class MapGenerator:
@@ -130,30 +131,46 @@ class MapGenerator:
                 if random.random() < RANDOM_OBJECT_DENSITY:
                     self.map_data[y][x] = TILE_OBJECT
 
+    def _get_sprite_for_tile(self, tile_type):
+        """Get the appropriate sprite for a tile type with fallback"""
+        sprite_mapping = {
+            TILE_GRASS: 'tile_grass',
+            TILE_OBJECT: 'tile_tree',
+            TILE_WALL: 'tile_wall_brick',
+            TILE_WOOD: 'tile_building_wall'
+        }
+        
+        sprite_name = sprite_mapping.get(tile_type, 'tile_grass')
+        sprite = get_sprite(sprite_name)
+        
+        # If sprite not found, create fallback colored rectangle
+        if sprite is None:
+            sprite = pygame.Surface((TILE_SIZE, TILE_SIZE))
+            sprite.fill(TILE_COLORS[tile_type])
+            
+        return sprite
+
     def _create_map_surface(self):
-        """Create a surface with the map rendered on it"""
+        """Create a surface with the map rendered using sprites"""
         # Create a surface large enough for the entire map
         surface_width = MAP_WIDTH * TILE_SIZE
         surface_height = MAP_HEIGHT * TILE_SIZE
         surface = pygame.Surface((surface_width, surface_height))
 
-        # Draw each tile on the surface
+        # Draw each tile on the surface using sprites
         for y in range(MAP_HEIGHT):
             for x in range(MAP_WIDTH):
                 tile_type = self.map_data[y][x]
-                tile_color = TILE_COLORS[tile_type]
-
-                # Draw the tile as a rectangle
-                rect = pygame.Rect(
-                    x * TILE_SIZE, 
-                    y * TILE_SIZE, 
-                    TILE_SIZE, 
-                    TILE_SIZE
-                )
-                pygame.draw.rect(surface, tile_color, rect)
-
-                # Add a slight border to make tiles more visible
-                pygame.draw.rect(surface, (0, 0, 0), rect, 1)
+                
+                # Get sprite for this tile type
+                sprite = self._get_sprite_for_tile(tile_type)
+                
+                # Calculate position
+                pos_x = x * TILE_SIZE
+                pos_y = y * TILE_SIZE
+                
+                # Draw the sprite
+                surface.blit(sprite, (pos_x, pos_y))
 
         return surface
 

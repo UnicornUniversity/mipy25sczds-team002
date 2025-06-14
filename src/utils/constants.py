@@ -56,3 +56,60 @@ TILE_COLORS = {
     TILE_WALL: GRAY,
     TILE_WOOD: BROWN
 }
+
+# Asset Management Constants
+# ===========================
+
+# Visual Consistency Settings
+PIXEL_ART_SCALE = 1.0  # Scale factor for pixel art
+SPRITE_ANTI_ALIAS = False  # Keep pixel art crisp
+
+# Asset Categories (for organization)
+ASSET_CATEGORIES = {
+    'characters': ['player', 'zombie'],
+    'tiles': ['grass', 'dirt', 'stone', 'wall', 'tree', 'building'],
+    'weapons': ['pistol', 'rifle', 'shotgun'],
+    'items': ['health', 'ammo', 'key'],
+    'effects': ['muzzle_flash', 'blood', 'explosion'],
+    'ui': ['button', 'bar', 'icon']
+}
+
+# Color Palette (for visual consistency)
+COLOR_PALETTE = {
+    # Player colors
+    'player_primary': (60, 120, 60),     # Dark green
+    'player_secondary': (100, 160, 100), # Light green
+    
+    # Enemy colors
+    'zombie_basic': (150, 50, 50),       # Dark red
+    'zombie_runner': (200, 100, 50),     # Orange
+    'zombie_tank': (100, 30, 30),        # Very dark red
+    
+    # Environment colors
+    'tile_grass': (50, 120, 50),         # Grass green
+    'tile_dirt': (120, 80, 40),          # Brown dirt
+    'tile_wall_brick': (120, 80, 60),    # Brick brown
+    'tile_wall_concrete': (100, 100, 100), # Gray concrete
+    'tile_tree': (34, 139, 34),          # Forest green
+    'tile_building_wall': (105, 105, 105), # Gray building
+    
+    # Item colors
+    'item_health': (100, 200, 100),      # Bright green
+    'item_ammo': (200, 200, 50),         # Yellow
+    'item_weapon': (150, 150, 150),      # Gray metal
+    
+    # UI colors
+    'ui_primary': (40, 40, 60),          # Dark blue-gray
+    'ui_secondary': (80, 80, 120),       # Light blue-gray
+    'ui_accent': (255, 200, 50),         # Golden yellow
+    'ui_health': (200, 50, 50),          # Red for health bars
+    'ui_ammo': (200, 200, 50),           # Yellow for ammo
+}
+
+# Performance Optimization Settings
+SPRITE_CACHE_SIZE = 256  # Maximum number of cached sprite variations
+ENABLE_SPRITE_OPTIMIZATION = True  # Enable surface optimization
+
+# Asset Quality Settings
+TEXTURE_FILTER = 'nearest'  # For pixel art (nearest/linear)
+COMPRESSION_QUALITY = 95    # PNG compression quality (0-100)
