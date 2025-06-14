@@ -25,7 +25,16 @@ ENEMY_SIZE = 24
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
 ENEMY_SPEED = 100
+TOUGH_ZOMBIE_SPEED = 70  # Slower than regular zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
+
+# Health and Damage
+PLAYER_MAX_HEALTH = 100
+ZOMBIE_HEALTH = 30
+ZOMBIE_DAMAGE = 5
+TOUGH_ZOMBIE_HEALTH = 60  # Tougher than regular zombies
+TOUGH_ZOMBIE_DAMAGE = 10  # More damage than regular zombies
+ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
 
 # Background
 DOT_SIZE = 2
@@ -56,3 +65,21 @@ TILE_COLORS = {
     TILE_WALL: GRAY,
     TILE_WOOD: BROWN
 }
+
+# Items
+ITEM_SIZE = 16
+HEALTH_PACK_COLOR = RED
+WEAPON_COLOR = BLUE
+POWERUP_COLOR = GREEN
+HEALTH_PACK_HEAL_AMOUNT = 25
+PICKUP_NOTIFICATION_DURATION = 3.0  # seconds
+
+# Weapons
+BULLET_SIZE = 6
+BULLET_SPEED = 500  # pixels per second
+BULLET_COLOR = BLACK
+PISTOL_DAMAGE = 10
+PISTOL_SPREAD = 0.2  # radians (about 11 degrees)
+PISTOL_MAGAZINE_SIZE = 12
+PISTOL_RELOAD_TIME = 1.5  # seconds
+WEAPON_COOLDOWN = 0.3  # seconds between shots

@@ -1,7 +1,12 @@
 import pygame
 import math
 from entities.entity import Entity
-from utils.constants import BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT
+from utils.constants import (
+    BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, 
+    ZOMBIE_HEALTH, ZOMBIE_DAMAGE, ZOMBIE_ATTACK_COOLDOWN,
+    TOUGH_ZOMBIE_HEALTH, TOUGH_ZOMBIE_DAMAGE, TOUGH_ZOMBIE_SPEED,
+    RED
+)
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -17,6 +22,8 @@ class Zombie(Entity):
         self.speed = ENEMY_SPEED
         self.is_on_object = False  # Flag to track if zombie is on an object
         self.map_generator = None  # Will be set by GameplayState
+        self.health = ZOMBIE_HEALTH
+        self.attack_timer = 0  # Timer for attack cooldown
 
     def update(self, dt, player_x, player_y, map_generator=None):
         """Update zombie state to move towards player
@@ -30,6 +37,10 @@ class Zombie(Entity):
         # Store map_generator reference if provided
         if map_generator:
             self.map_generator = map_generator
+
+        # Update attack timer
+        if self.attack_timer > 0:
+            self.attack_timer -= dt
 
         # Calculate direction vector to player
         dx = player_x - self.x
@@ -61,6 +72,47 @@ class Zombie(Entity):
         # Call parent update to update rect
         super().update(dt)
 
+    def attack(self, player):
+        """Attack the player if cooldown has expired
+
+        Args:
+            player: The player to attack
+
+        Returns:
+            bool: True if attack was successful, False otherwise
+        """
+        if self.attack_timer <= 0:
+            # Reset attack timer
+            self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
+
+            # Deal damage to player
+            return player.take_damage(ZOMBIE_DAMAGE)
+
+        return False
+
+    def take_damage(self, amount):
+        """Reduce zombie health by the specified amount
+
+        Args:
+            amount (int): Amount of damage to take
+
+        Returns:
+            bool: True if zombie died, False otherwise
+        """
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            return True  # Zombie died
+        return False
+
+    def is_dead(self):
+        """Check if the zombie is dead
+
+        Returns:
+            bool: True if zombie health is 0, False otherwise
+        """
+        return self.health <= 0
+
     def render(self, screen, camera_offset=(0, 0)):
         """Render the zombie as a black circle
 
@@ -83,3 +135,40 @@ class Zombie(Entity):
         else:
             # Draw zombie normally when not on an object
             pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+
+
+class ToughZombie(Zombie):
+    """Tougher zombie entity that follows the player but is slower"""
+
+    def __init__(self, x, y):
+        """Initialize the tough zombie
+
+        Args:
+            x (float): Initial x position
+            y (float): Initial y position
+        """
+        # Call parent constructor
+        super().__init__(x, y)
+
+        # Override properties for tough zombie
+        self.color = RED
+        self.speed = TOUGH_ZOMBIE_SPEED
+        self.health = TOUGH_ZOMBIE_HEALTH
+
+    def attack(self, player):
+        """Attack the player if cooldown has expired
+
+        Args:
+            player: The player to attack
+
+        Returns:
+            bool: True if attack was successful, False otherwise
+        """
+        if self.attack_timer <= 0:
+            # Reset attack timer
+            self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
+
+            # Deal damage to player (more damage than regular zombie)
+            return player.take_damage(TOUGH_ZOMBIE_DAMAGE)
+
+        return False
