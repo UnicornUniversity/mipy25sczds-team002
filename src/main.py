@@ -3,7 +3,7 @@ import sys
 from game.settings import Settings
 from game.game_state import GameStateManager
 from utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, FPS
-from utils.sprite_loader import load_all_assets
+from utils.sprite_loader import load_all_assets, debug_sprite_info
 
 
 def main():
@@ -17,6 +17,9 @@ def main():
     # Initialize asset management system
     print("Initializing Deadlock...")
     load_all_assets()
+
+    # Debug: Print information about loaded sprites
+    debug_sprite_info()
 
     # Init game systems
     settings = Settings()

@@ -132,22 +132,55 @@ class MapGenerator:
                     self.map_data[y][x] = TILE_OBJECT
 
     def _get_sprite_for_tile(self, tile_type):
-        """Get the appropriate sprite for a tile type with fallback"""
-        sprite_mapping = {
-            TILE_GRASS: 'tile_grass',
-            TILE_OBJECT: 'tile_tree',
-            TILE_WALL: 'tile_wall_brick',
-            TILE_WOOD: 'tile_building_wall'
-        }
-        
-        sprite_name = sprite_mapping.get(tile_type, 'tile_grass')
+        """Get the appropriate sprite for a tile type with fallback
+
+        According to the requirements:
+        - Grass tiles should be randomly selected from the first four in the row
+        - Objects should use dirt textures
+        - Walls should use gray tiles
+        - Wood should use wood textures
+        """
+        # Use a random grass texture for grass tiles
+        if tile_type == TILE_GRASS:
+            # Randomly select one of the first four tiles in the first row (grass types)
+            col = random.randint(0, 3)
+            sprite_name = f"tile_grass_0_{col}"
+        # Use dirt textures for objects
+        elif tile_type == TILE_OBJECT:
+            # Randomly select one of the two dirt tiles
+            col = random.randint(4, 5)
+            sprite_name = f"tile_dirt_0_{col}"
+        # Use gray tiles for walls
+        elif tile_type == TILE_WALL:
+            # Randomly select one of the five gray tiles
+            col = random.randint(6, 10)
+            sprite_name = f"tile_gray_0_{col}"
+        # Use wood textures for wood
+        elif tile_type == TILE_WOOD:
+            # Use a specific wood texture
+            sprite_name = "tile_building_wall"
+        else:
+            # Default to grass
+            sprite_name = "tile_grass_0_0"
+
         sprite = get_sprite(sprite_name)
-        
-        # If sprite not found, create fallback colored rectangle
+
+        # If sprite not found, try fallback to old names
+        if sprite is None:
+            fallback_mapping = {
+                TILE_GRASS: 'tile_grass',
+                TILE_OBJECT: 'tile_tree',
+                TILE_WALL: 'tile_wall_brick',
+                TILE_WOOD: 'tile_building_wall'
+            }
+            fallback_name = fallback_mapping.get(tile_type, 'tile_grass')
+            sprite = get_sprite(fallback_name)
+
+        # If still not found, create fallback colored rectangle
         if sprite is None:
             sprite = pygame.Surface((TILE_SIZE, TILE_SIZE))
             sprite.fill(TILE_COLORS[tile_type])
-            
+
         return sprite
 
     def _create_map_surface(self):
@@ -161,14 +194,14 @@ class MapGenerator:
         for y in range(MAP_HEIGHT):
             for x in range(MAP_WIDTH):
                 tile_type = self.map_data[y][x]
-                
+
                 # Get sprite for this tile type
                 sprite = self._get_sprite_for_tile(tile_type)
-                
+
                 # Calculate position
                 pos_x = x * TILE_SIZE
                 pos_y = y * TILE_SIZE
-                
+
                 # Draw the sprite
                 surface.blit(sprite, (pos_x, pos_y))
 

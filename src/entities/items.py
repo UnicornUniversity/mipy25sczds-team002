@@ -8,6 +8,7 @@ from utils.constants import (
     PISTOL_BULLET_COLOR, SHOTGUN_BULLET_COLOR, ASSAULT_RIFLE_BULLET_COLOR,
     SNIPER_RIFLE_BULLET_COLOR, BAZOOKA_BULLET_COLOR
 )
+from utils.sprite_loader import get_texture, get_scaled_texture
 
 class Item(Entity):
     """Base class for all pickable items"""
@@ -26,7 +27,7 @@ class Item(Entity):
         self.picked_up = False
 
     def render(self, screen, camera_offset=(0, 0)):
-        """Render the item as a circle
+        """Render the item using its sprite
 
         Args:
             screen (pygame.Surface): Screen to render on
@@ -35,12 +36,30 @@ class Item(Entity):
         if self.picked_up:
             return
 
-        # Calculate center position
-        center_x = self.rect.x + self.width // 2 - camera_offset[0]
-        center_y = self.rect.y + self.height // 2 - camera_offset[1]
+        # Get the sprite for this item type
+        sprite = self._get_sprite()
 
-        # Draw item as a circle
-        pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+        if sprite:
+            # Calculate position
+            pos_x = self.rect.x - camera_offset[0]
+            pos_y = self.rect.y - camera_offset[1]
+
+            # Draw the sprite
+            screen.blit(sprite, (pos_x, pos_y))
+        else:
+            # Fallback to drawing a circle if no sprite is available
+            center_x = self.rect.x + self.width // 2 - camera_offset[0]
+            center_y = self.rect.y + self.height // 2 - camera_offset[1]
+            pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+
+    def _get_sprite(self):
+        """Get the sprite for this item type.
+
+        Returns:
+            pygame.Surface: The sprite surface, or None if not found
+        """
+        # This is a base method that should be overridden by subclasses
+        return None
 
     def pickup(self, player):
         """Handle item pickup by player
@@ -98,6 +117,21 @@ class HealthPack(Item):
         """
         super().__init__(x, y, 'health', HEALTH_PACK_COLOR)
 
+    def _get_sprite(self):
+        """Get the health pack sprite.
+
+        Returns:
+            pygame.Surface: The health pack sprite, or None if not found
+        """
+        # Try to get a health pack sprite from the texture atlas
+        # First check if there's a dedicated health pack sprite
+        sprite = get_texture('items', 'health_pack')
+        if sprite is None:
+            # If not, try to get a generic health sprite
+            sprite = get_texture('items', 'health')
+
+        return sprite
+
     def pickup(self, player):
         """Handle health pack pickup by player
 
@@ -120,13 +154,22 @@ class Weapon(Item):
     # Define weapon hierarchy (from lowest to highest)
     WEAPON_HIERARCHY = ["pistol", "shotgun", "assault_rifle", "sniper_rifle", "bazooka"]
 
-    # Define weapon colors for display
+    # Define weapon colors for display (used as fallback if sprite is not available)
     WEAPON_COLORS = {
         "pistol": PISTOL_BULLET_COLOR,
         "shotgun": SHOTGUN_BULLET_COLOR,
         "assault_rifle": ASSAULT_RIFLE_BULLET_COLOR,
         "sniper_rifle": SNIPER_RIFLE_BULLET_COLOR,
         "bazooka": BAZOOKA_BULLET_COLOR
+    }
+
+    # Map weapon types to sprite names
+    WEAPON_SPRITE_NAMES = {
+        "pistol": "pistol",
+        "shotgun": "shotgun",
+        "assault_rifle": "assault_rifle",
+        "sniper_rifle": "sniper_rifle",
+        "bazooka": "explosives"  # Bazooka uses the explosives sprite
     }
 
     def __init__(self, x, y, weapon_type="pistol"):
@@ -141,6 +184,26 @@ class Weapon(Item):
         color = self.WEAPON_COLORS.get(weapon_type, WEAPON_COLOR)
         super().__init__(x, y, 'weapon', color)
         self.weapon_type = weapon_type
+
+    def _get_sprite(self):
+        """Get the weapon sprite based on weapon type.
+
+        Returns:
+            pygame.Surface: The weapon sprite, or None if not found
+        """
+        # Get the sprite name for this weapon type
+        sprite_name = self.WEAPON_SPRITE_NAMES.get(self.weapon_type, self.weapon_type)
+
+        # Try to get the weapon sprite from the texture atlas
+        sprite = get_texture('weapon', sprite_name)
+
+        # Make weapon icons at least twice as large as the default ITEM_SIZE
+        if sprite:
+            # Use a fixed scale factor of 2.0 to make weapons larger
+            scale_factor = 2.0
+            sprite = get_scaled_texture('weapon', sprite_name, scale_factor)
+
+        return sprite
 
     def pickup(self, player):
         """Handle weapon pickup by player
@@ -210,6 +273,23 @@ class Powerup(Item):
             y (float): Initial y position
         """
         super().__init__(x, y, 'powerup', POWERUP_COLOR)
+
+    def _get_sprite(self):
+        """Get the powerup sprite.
+
+        Returns:
+            pygame.Surface: The powerup sprite, or None if not found
+        """
+        # Try to get a powerup sprite from the texture atlas
+        sprite = get_texture('items', 'powerup')
+
+        # If the sprite is too large, scale it to fit the item size
+        if sprite and (sprite.get_width() > ITEM_SIZE or sprite.get_height() > ITEM_SIZE):
+            # Calculate scale factor to fit within ITEM_SIZE
+            scale_factor = min(ITEM_SIZE / sprite.get_width(), ITEM_SIZE / sprite.get_height())
+            sprite = get_scaled_texture('items', 'powerup', scale_factor)
+
+        return sprite
 
     def pickup(self, player):
         """Handle powerup pickup by player
