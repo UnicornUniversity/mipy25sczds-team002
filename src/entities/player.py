@@ -3,6 +3,8 @@ import math
 from entities.entity import Entity
 from systems.weapons import Pistol
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
+from utils.sprite_loader import get_sprite
+
 
 class Player(Entity):
     """Player entity controlled by the user"""
@@ -26,6 +28,13 @@ class Player(Entity):
         # Weapon handling
         self.weapon = Pistol()  # Start with a pistol
         self.aim_angle = 0  # Angle in radians (0 = right, pi/2 = down)
+
+        # Animation tracking for sprites
+        self.animation_time = 0
+        self.is_moving = False
+
+        # Direction tracking for sprite flipping
+        self.facing_left = False  # True if facing left, False if facing right
 
     def update(self, dt, map_generator=None):
         """Update player state based on input
@@ -68,15 +77,32 @@ class Player(Entity):
         # Store previous position for collision detection
         prev_x, prev_y = self.x, self.y
 
-        # Move player based on arrow keys or WASD
+        # Reset movement flag
+        self.is_moving = False
+
+        # Move player based on arrow keys or WASD and track direction
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.x -= base_speed * dt
+            self.is_moving = True
+            self.facing_left = True  # Facing left
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.x += base_speed * dt
+            self.is_moving = True
+            self.facing_left = False  # Facing right
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             self.y -= base_speed * dt
+            self.is_moving = True
+            # Don't change horizontal facing for vertical movement
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.y += base_speed * dt
+            self.is_moving = True
+            # Don't change horizontal facing for vertical movement
+
+        # Update animation time
+        if self.is_moving:
+            self.animation_time += dt
+        else:
+            self.animation_time = 0
 
         # Boundary checking to prevent player from leaving the map
         map_width_px = MAP_WIDTH * TILE_SIZE
@@ -169,21 +195,52 @@ class Player(Entity):
             screen (pygame.Surface): Screen to render on
             camera_offset (tuple): Camera offset (x, y)
         """
-        # Calculate center position
-        center_x = self.rect.x + self.width // 2 - camera_offset[0]
-        center_y = self.rect.y + self.height // 2 - camera_offset[1]
+        # Calculate screen position
+        screen_x = self.rect.x - camera_offset[0]
+        screen_y = self.rect.y - camera_offset[1]
+        
+        # Calculate center position (needed for both sprite and fallback rendering)
+        center_x = screen_x + self.width // 2
+        center_y = screen_y + self.height // 2
 
-        # Create a transparent surface for the player when on an object
-        if self.is_on_object:
-            # Create a surface with per-pixel alpha
-            circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            # Draw a semi-transparent circle (128 is 50% opacity)
-            pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
-            # Blit the surface to the screen
-            screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
+        # Use only player_idle sprite for consistency - always the same character
+        sprite = get_sprite('player_idle')
+
+        if sprite:
+            # Flip sprite horizontally if facing left
+            if self.facing_left:
+                sprite = pygame.transform.flip(sprite, True, False)  # Flip horizontally
+
+            # Center the sprite on the entity position
+            sprite_x = screen_x - (sprite.get_width() - self.width) // 2
+            sprite_y = screen_y - (sprite.get_height() - self.height) // 2
+
+            # Apply transparency if on object
+            if self.is_on_object:
+                # Create a copy with alpha for transparency effect
+                sprite_copy = sprite.copy()
+                sprite_copy.set_alpha(180)  # Semi-transparent
+                screen.blit(sprite_copy, (sprite_x, sprite_y))
+            else:
+                # Optional: slight visual feedback for movement
+                if self.is_moving:
+                    # Very subtle "bounce" effect during movement
+                    bounce_offset = int(2 * abs(math.cos(self.animation_time * 8)))
+                    sprite_y -= bounce_offset
+
+                screen.blit(sprite, (sprite_x, sprite_y))
         else:
-            # Draw player normally when not on an object
-            pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+            # Fallback: draw circle if sprite not available
+            if self.is_on_object:
+                # Create a transparent surface for the player when on an object
+                circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                # Draw a semi-transparent circle (128 is 50% opacity)
+                pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
+                # Blit the surface to the screen
+                screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
+            else:
+                # Draw player normally when not on an object
+                pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
 
         # Draw aim direction line
         line_length = self.width  # Length of the aim line
