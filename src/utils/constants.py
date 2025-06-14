@@ -25,7 +25,16 @@ ENEMY_SIZE = 24
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
 ENEMY_SPEED = 100
+TOUGH_ZOMBIE_SPEED = 70  # Slower than regular zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
+
+# Health and Damage
+PLAYER_MAX_HEALTH = 100
+ZOMBIE_HEALTH = 30
+ZOMBIE_DAMAGE = 5
+TOUGH_ZOMBIE_HEALTH = 60  # Tougher than regular zombies
+TOUGH_ZOMBIE_DAMAGE = 10  # More damage than regular zombies
+ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
 
 # Background
 DOT_SIZE = 2
@@ -57,59 +66,62 @@ TILE_COLORS = {
     TILE_WOOD: BROWN
 }
 
-# Asset Management Constants
-# ===========================
+# Items
+ITEM_SIZE = 16
+HEALTH_PACK_COLOR = RED
+WEAPON_COLOR = BLUE
+POWERUP_COLOR = GREEN
+HEALTH_PACK_HEAL_AMOUNT = 25
+PICKUP_NOTIFICATION_DURATION = 3.0  # seconds
 
-# Visual Consistency Settings
-PIXEL_ART_SCALE = 1.0  # Scale factor for pixel art
-SPRITE_ANTI_ALIAS = False  # Keep pixel art crisp
+# Weapons
+BULLET_SIZE = 6
+BULLET_SPEED = 500  # pixels per second
+BULLET_COLOR = BLACK
 
-# Asset Categories (for organization)
-ASSET_CATEGORIES = {
-    'characters': ['player', 'zombie'],
-    'tiles': ['grass', 'dirt', 'stone', 'wall', 'tree', 'building'],
-    'weapons': ['pistol', 'rifle', 'shotgun'],
-    'items': ['health', 'ammo', 'key'],
-    'effects': ['muzzle_flash', 'blood', 'explosion'],
-    'ui': ['button', 'bar', 'icon']
-}
+# Pistol - Balanced damage/fire rate
+PISTOL_DAMAGE = 10
+PISTOL_SPREAD = 0.2  # radians (about 11 degrees)
+PISTOL_MAGAZINE_SIZE = 12
+PISTOL_RELOAD_TIME = 1.5  # seconds
+PISTOL_COOLDOWN = 0.3  # seconds between shots
+PISTOL_BULLET_COLOR = BLACK
 
-# Color Palette (for visual consistency)
-COLOR_PALETTE = {
-    # Player colors
-    'player_primary': (60, 120, 60),     # Dark green
-    'player_secondary': (100, 160, 100), # Light green
-    
-    # Enemy colors
-    'zombie_basic': (150, 50, 50),       # Dark red
-    'zombie_runner': (200, 100, 50),     # Orange
-    'zombie_tank': (100, 30, 30),        # Very dark red
-    
-    # Environment colors
-    'tile_grass': (50, 120, 50),         # Grass green
-    'tile_dirt': (120, 80, 40),          # Brown dirt
-    'tile_wall_brick': (120, 80, 60),    # Brick brown
-    'tile_wall_concrete': (100, 100, 100), # Gray concrete
-    'tile_tree': (34, 139, 34),          # Forest green
-    'tile_building_wall': (105, 105, 105), # Gray building
-    
-    # Item colors
-    'item_health': (100, 200, 100),      # Bright green
-    'item_ammo': (200, 200, 50),         # Yellow
-    'item_weapon': (150, 150, 150),      # Gray metal
-    
-    # UI colors
-    'ui_primary': (40, 40, 60),          # Dark blue-gray
-    'ui_secondary': (80, 80, 120),       # Light blue-gray
-    'ui_accent': (255, 200, 50),         # Golden yellow
-    'ui_health': (200, 50, 50),          # Red for health bars
-    'ui_ammo': (200, 200, 50),           # Yellow for ammo
-}
+# Shotgun - High damage at close range, slow reload
+SHOTGUN_DAMAGE = 5  # per pellet
+SHOTGUN_PELLETS = 8  # number of pellets per shot
+SHOTGUN_SPREAD = 0.4  # radians (wider spread)
+SHOTGUN_MAGAZINE_SIZE = 6
+SHOTGUN_RELOAD_TIME = 2.5  # seconds
+SHOTGUN_COOLDOWN = 0.8  # seconds between shots
+SHOTGUN_BULLET_COLOR = RED
 
-# Performance Optimization Settings
-SPRITE_CACHE_SIZE = 256  # Maximum number of cached sprite variations
-ENABLE_SPRITE_OPTIMIZATION = True  # Enable surface optimization
+# Assault Rifle - Rapid fire, medium damage
+ASSAULT_RIFLE_DAMAGE = 8
+ASSAULT_RIFLE_SPREAD = 0.25  # radians
+ASSAULT_RIFLE_MAGAZINE_SIZE = 30
+ASSAULT_RIFLE_RELOAD_TIME = 2.0  # seconds
+ASSAULT_RIFLE_COOLDOWN = 0.1  # seconds between shots (rapid fire)
+ASSAULT_RIFLE_BULLET_COLOR = BLUE
 
-# Asset Quality Settings
-TEXTURE_FILTER = 'nearest'  # For pixel art (nearest/linear)
-COMPRESSION_QUALITY = 95    # PNG compression quality (0-100)
+# Sniper Rifle - High damage, slow fire rate, high accuracy
+SNIPER_RIFLE_DAMAGE = 50
+SNIPER_RIFLE_SPREAD = 0.05  # radians (very accurate)
+SNIPER_RIFLE_MAGAZINE_SIZE = 5
+SNIPER_RIFLE_RELOAD_TIME = 3.0  # seconds
+SNIPER_RIFLE_COOLDOWN = 1.5  # seconds between shots
+SNIPER_RIFLE_BULLET_COLOR = GREEN
+SNIPER_RIFLE_BULLET_SPEED = 800  # faster bullet
+
+# Bazooka - Explosive damage, very slow fire rate
+BAZOOKA_DAMAGE = 100
+BAZOOKA_SPREAD = 0.1  # radians
+BAZOOKA_MAGAZINE_SIZE = 1
+BAZOOKA_RELOAD_TIME = 4.0  # seconds
+BAZOOKA_COOLDOWN = 2.0  # seconds between shots
+BAZOOKA_BULLET_COLOR = BROWN
+BAZOOKA_EXPLOSION_RADIUS = 100  # pixels
+BAZOOKA_BULLET_SPEED = 300  # slower bullet
+
+# General weapon settings
+WEAPON_COOLDOWN = 0.3  # default cooldown for weapons

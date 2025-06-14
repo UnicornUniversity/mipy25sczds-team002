@@ -1,14 +1,17 @@
 import pygame
 import random
+import math
 from entities.player import Player
-from entities.zombies import Zombie
+from entities.zombies import Zombie, ToughZombie
+from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
+from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
-    CAMERA_LERP, BLACK, MAP_WIDTH, MAP_HEIGHT,
-    DEBUG_FONT_SIZE, DEBUG_TEXT_COLOR
+    CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
+    DEBUG_FONT_SIZE, DEBUG_TEXT_COLOR,
+    PLAYER_MAX_HEALTH, PICKUP_NOTIFICATION_DURATION
 )
-from utils.sprite_loader import get_asset_info
 
 
 class GameState:
@@ -55,13 +58,19 @@ class MenuState(GameState):
 class GameplayState(GameState):
     """Main gameplay state"""
 
+    # Class variable to store the current instance
+    instance = None
+
     def __init__(self):
+        # Set the instance to self
+        GameplayState.instance = self
+
         # Create the map generator
         self.map_generator = MapGenerator()
 
         # Find a walkable tile near the center for the player
-        center_x = (TILE_SIZE * WINDOW_WIDTH) // 2
-        center_y = (TILE_SIZE * WINDOW_HEIGHT) // 2
+        center_x = (TILE_SIZE * MAP_WIDTH) // 2
+        center_y = (TILE_SIZE * MAP_HEIGHT) // 2
 
         # Search for a walkable tile in a spiral pattern around the center
         player_x, player_y = self._find_walkable_position(center_x, center_y)
@@ -78,9 +87,28 @@ class GameplayState(GameState):
         for _ in range(3):
             self._spawn_zombie()
 
+        # Create a list to store items
+        self.items = []
+
+        # Spawn random weapons around the map
+        self._spawn_random_weapons(5)  # Spawn 5 random weapons
+
+        # Create a list to store bullets
+        self.bullets = []
+
+        # Pickup notification
+        self.pickup_message = ""
+        self.pickup_timer = 0
+
+        # Mouse button state tracking
+        self.left_mouse_down = False
+
         # Debug mode (toggled with F1)
         self.debug_mode = False
         self.debug_font = pygame.font.Font(None, DEBUG_FONT_SIZE)
+
+        # Visual effects
+        self.effects = []
 
     def _find_walkable_position(self, center_x, center_y):
         """Find a walkable position near the specified center coordinates"""
@@ -115,8 +143,8 @@ class GameplayState(GameState):
         """Spawn a zombie at a random position away from the player on a walkable tile"""
         # Choose a random position at least 200 pixels away from the player
         while True:
-            x = random.randint(0, TILE_SIZE * WINDOW_WIDTH)
-            y = random.randint(0, TILE_SIZE * WINDOW_HEIGHT)
+            x = random.randint(0, TILE_SIZE * MAP_WIDTH)
+            y = random.randint(0, TILE_SIZE * MAP_HEIGHT)
 
             # Calculate distance to player
             dx = x - self.player.x
@@ -125,8 +153,90 @@ class GameplayState(GameState):
 
             # If far enough away and on a walkable tile, create the zombie
             if distance > 200 and self.map_generator.is_walkable(x, y):
-                self.zombies.append(Zombie(x, y))
+                # 20% chance to spawn a tough zombie
+                if random.random() < 0.2:
+                    self.zombies.append(ToughZombie(x, y))
+                else:
+                    self.zombies.append(Zombie(x, y))
                 break
+
+    def _spawn_random_weapons(self, count=5):
+        """Spawn random weapons around the map
+
+        Args:
+            count (int): Number of weapons to spawn
+        """
+        # Spawn the specified number of weapons
+        for _ in range(count):
+            # Find a random walkable position on the map
+            self._spawn_random_item()
+
+    def _spawn_random_item(self, near_player=False, weapon_type=None):
+        """Spawn a random item at a random position on the map
+
+        Args:
+            near_player (bool): Whether to spawn the item near the player
+            weapon_type (str, optional): Specific weapon type to spawn
+
+        Returns:
+            Item: The spawned item, or None if no suitable position was found
+        """
+        if near_player:
+            # Find a position within 10 tiles of the player
+            max_distance = 10 * TILE_SIZE
+            min_distance = 3 * TILE_SIZE
+            center_x = self.player.x
+            center_y = self.player.y
+        else:
+            # Find a position anywhere on the map
+            max_distance = min(MAP_WIDTH, MAP_HEIGHT) * TILE_SIZE / 2
+            min_distance = 0
+            # Use center of map as reference point
+            center_x = (MAP_WIDTH * TILE_SIZE) / 2
+            center_y = (MAP_HEIGHT * TILE_SIZE) / 2
+
+        # Try to find a walkable position for the item
+        for _ in range(50):  # Limit attempts to avoid infinite loop
+            # Random angle
+            angle = random.uniform(0, 2 * math.pi)
+            # Random distance
+            distance = random.uniform(min_distance, max_distance)
+
+            # Calculate position
+            x = center_x + distance * math.cos(angle)
+            y = center_y + distance * math.sin(angle)
+
+            # Ensure position is within map bounds
+            x = max(0, min(x, MAP_WIDTH * TILE_SIZE - TILE_SIZE))
+            y = max(0, min(y, MAP_HEIGHT * TILE_SIZE - TILE_SIZE))
+
+            # Check if position is walkable
+            if self.map_generator.is_walkable(x, y):
+                # Create a random item at this position
+                item = Item.create_random_item(x, y, weapon_type)
+                self.items.append(item)
+                return item
+
+        return None
+
+    def spawn_next_tier_weapon(self, current_weapon_type):
+        """Spawn a weapon of the next tier based on the current weapon type
+
+        Args:
+            current_weapon_type (str): Current weapon type
+
+        Returns:
+            Item: The spawned weapon, or None if no suitable position was found or already at highest tier
+        """
+        # Get the next tier weapon type
+        from entities.items import Weapon
+        next_weapon_type = Weapon.get_next_tier_weapon(current_weapon_type)
+
+        # If there is a next tier, spawn it near the player
+        if next_weapon_type:
+            return self._spawn_random_item(near_player=True, weapon_type=next_weapon_type)
+
+        return None
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -135,15 +245,135 @@ class GameplayState(GameState):
             elif event.key == pygame.K_F1:
                 # Toggle debug mode
                 self.debug_mode = not self.debug_mode
+            elif event.key == pygame.K_r:
+                # Reload weapon
+                if self.player.weapon:
+                    self.player.weapon.reload()
+        elif event.type == pygame.MOUSEMOTION:
+            # Update player aim based on mouse position
+            mouse_pos = pygame.mouse.get_pos()
+            camera_offset = (int(self.camera_x), int(self.camera_y))
+            self.player.update_aim(mouse_pos, camera_offset)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left mouse button
+                # Set flag for continuous firing
+                self.left_mouse_down = True
+
+                # Attempt to shoot immediately
+                result = self.player.shoot()
+                if result:
+                    # Handle different return types from different weapons
+                    if isinstance(result, list):
+                        # Shotgun returns a list of pellets
+                        self.bullets.extend(result)
+                    else:
+                        # Other weapons return a single bullet
+                        self.bullets.append(result)
+
+                    # Add muzzle flash effect
+                    self._add_muzzle_flash_effect()
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:  # Left mouse button
+                # Clear flag when button is released
+                self.left_mouse_down = False
         return None
 
     def update(self, dt):
         # Update player with map_generator reference
         self.player.update(dt, self.map_generator)
 
-        # Update zombies with map_generator reference
-        for zombie in self.zombies:
+        # Handle continuous firing for assault rifle
+        if self.left_mouse_down and self.player.weapon and hasattr(self.player.weapon, 'name') and self.player.weapon.name == "Assault Rifle":
+            result = self.player.shoot()
+            if result:
+                # Handle different return types from different weapons
+                if isinstance(result, list):
+                    # Shotgun returns a list of pellets
+                    self.bullets.extend(result)
+                else:
+                    # Other weapons return a single bullet
+                    self.bullets.append(result)
+
+                # Add muzzle flash effect
+                self._add_muzzle_flash_effect()
+
+        # Update zombies with map_generator reference and check for collisions
+        zombies_to_remove = []
+        for i, zombie in enumerate(self.zombies):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
+
+            # Check for collision with player
+            if self._check_collision(zombie, self.player):
+                # Zombie attacks player
+                zombie.attack(self.player)
+
+                # Check if player is dead
+                if self.player.is_dead():
+                    # Handle game over (will be implemented later)
+                    print("Game Over! Player died.")
+                    # For now, just reset player health
+                    self.player.health = 100
+
+        # Update bullets and check for collisions
+        bullets_to_remove = []
+        for i, bullet in enumerate(self.bullets):
+            # Update bullet position
+            bullet.update(dt, self.map_generator)
+
+            # Check if bullet has expired
+            if bullet.is_expired():
+                bullets_to_remove.append(i)
+                continue
+
+            # Check for collision with zombies
+            for j, zombie in enumerate(self.zombies):
+                if self._check_collision(bullet, zombie):
+                    # Bullet hit zombie
+                    zombie_died = zombie.take_damage(bullet.damage)
+
+                    # Add blood splatter effect
+                    self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
+
+                    # Mark bullet for removal
+                    bullets_to_remove.append(i)
+                    break
+
+            # Check for collision with map (walls)
+            if not bullets_to_remove or i not in bullets_to_remove:
+                if self.map_generator and not self.map_generator.is_walkable(bullet.x, bullet.y):
+                    # Add bullet impact effect
+                    self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
+
+                    # Mark bullet for removal
+                    bullets_to_remove.append(i)
+
+        # Remove expired or collided bullets
+        self.bullets = [b for i, b in enumerate(self.bullets) if i not in bullets_to_remove]
+
+        # Remove dead zombies
+        self.zombies = [zombie for zombie in self.zombies if not zombie.is_dead()]
+
+        # Check for item pickups
+        for item in self.items:
+            if not item.picked_up and self._check_collision(item, self.player):
+                # Item is picked up by player
+                message = item.pickup(self.player)
+                self.pickup_message = message
+                self.pickup_timer = PICKUP_NOTIFICATION_DURATION
+
+        # Update pickup notification timer
+        if self.pickup_timer > 0:
+            self.pickup_timer -= dt
+
+        # Update effects
+        effects_to_remove = []
+        for i, effect in enumerate(self.effects):
+            effect.update(dt)
+            if effect.finished:
+                effects_to_remove.append(i)
+
+        # Remove finished effects
+        self.effects = [e for i, e in enumerate(self.effects) if i not in effects_to_remove]
 
         # Update camera position to follow player (with smoothing)
         target_camera_x = self.player.x - WINDOW_WIDTH // 2
@@ -179,6 +409,14 @@ class GameplayState(GameState):
         # Draw the map with camera offset
         self.map_generator.render(screen, camera_offset)
 
+        # Draw items with camera offset
+        for item in self.items:
+            item.render(screen, camera_offset)
+
+        # Draw bullets with camera offset
+        for bullet in self.bullets:
+            bullet.render(screen, camera_offset)
+
         # Draw zombies with camera offset
         for zombie in self.zombies:
             zombie.render(screen, camera_offset)
@@ -186,48 +424,112 @@ class GameplayState(GameState):
         # Draw player with camera offset
         self.player.render(screen, camera_offset)
 
+        # Draw effects with camera offset
+        for effect in self.effects:
+            effect.render(screen, camera_offset)
+
+        # Draw pickup notification if active
+        if self.pickup_timer > 0:
+            # Create a font for the notification
+            notification_font = pygame.font.Font(None, 36)
+
+            # Render the notification text
+            notification_text = notification_font.render(self.pickup_message, True, WHITE)
+
+            # Position the notification at the top center of the screen
+            text_rect = notification_text.get_rect(center=(WINDOW_WIDTH // 2, 50))
+
+            # Draw the notification
+            screen.blit(notification_text, text_rect)
+
         # Render debug information if debug mode is enabled
         if self.debug_mode:
             self._render_debug_info(screen, fps)
 
+    def _check_collision(self, entity1, entity2):
+        """Check if two entities are colliding
+
+        Args:
+            entity1: First entity
+            entity2: Second entity
+
+        Returns:
+            bool: True if entities are colliding, False otherwise
+        """
+        # Calculate distance between entity centers
+        dx = entity1.x + entity1.width/2 - (entity2.x + entity2.width/2)
+        dy = entity1.y + entity1.height/2 - (entity2.y + entity2.height/2)
+        distance = (dx * dx + dy * dy) ** 0.5
+
+        # Check if distance is less than sum of radii (using width as diameter)
+        return distance < (entity1.width + entity2.width) / 2
+
+    def _add_muzzle_flash_effect(self):
+        """Add a muzzle flash effect at the player's weapon position"""
+        if not self.player.weapon:
+            return
+
+        # Calculate muzzle position (slightly in front of player in aim direction)
+        spawn_distance = self.player.width // 2 + 5  # 5 pixels in front of player edge
+        muzzle_x = self.player.x + self.player.width // 2 + math.cos(self.player.aim_angle) * spawn_distance
+        muzzle_y = self.player.y + self.player.height // 2 + math.sin(self.player.aim_angle) * spawn_distance
+
+        # Create muzzle flash effect
+        flash = MuzzleFlash(muzzle_x, muzzle_y, self.player.aim_angle)
+        self.effects.append(flash)
+
+    def _add_bullet_impact_effect(self, x, y, color=None):
+        """Add a bullet impact effect at the specified position
+
+        Args:
+            x (float): X position
+            y (float): Y position
+            color (tuple, optional): Color of the impact
+        """
+        # Use bullet color if provided, otherwise use white
+        impact_color = color or (255, 255, 255)
+
+        # Create bullet impact effect
+        impact = BulletImpact(x, y, impact_color)
+        self.effects.append(impact)
+
+    def _add_blood_splatter_effect(self, x, y):
+        """Add a blood splatter effect at the specified position
+
+        Args:
+            x (float): X position
+            y (float): Y position
+        """
+        # Create blood splatter effect
+        splatter = BloodSplatter(x, y)
+        self.effects.append(splatter)
+
     def _render_debug_info(self, screen, fps):
-        """Render debug information on the screen including asset management info"""
-        # Get asset management info
-        asset_info = get_asset_info()
-        
+        """Render debug information on the screen"""
         # Create debug text lines
         debug_lines = [
             f"FPS: {fps:.1f}",
+            f"Player Health: {self.player.health}/{PLAYER_MAX_HEALTH}",
             f"Player Position: ({self.player.x:.1f}, {self.player.y:.1f})",
             f"Tile Position: ({int(self.player.x // TILE_SIZE)}, {int(self.player.y // TILE_SIZE)})",
             f"On Object: {self.player.is_on_object}",
             f"Speed Multiplier: {self.player.debug_speed_multiplier:.1f}",
-            "",
-            "=== Asset Management ===",
-            f"Total Sprites: {asset_info['total_sprites']}",
-            f"Spritesheets: {asset_info['total_spritesheets']}",
-            f"Visual Consistency: Active",
-            f"Performance Optimization: Active",
+            f"Zombies: {len(self.zombies)}",
+            f"Items: {len(self.items)}",
+            f"Bullets: {len(self.bullets)}",
+            f"Effects: {len(self.effects)}",
+            f"Weapon: {self.player.weapon.name if self.player.weapon else 'None'}",
+            f"Ammo: {self.player.weapon.ammo}/{self.player.weapon.magazine_size if self.player.weapon else 0}",
+            f"Reloading: {self.player.weapon.is_reloading if self.player.weapon else False}",
+            f"Pickup Message: {self.pickup_message if self.pickup_timer > 0 else 'None'}"
         ]
 
         # Render each line of debug text
         y_offset = 10
         for line in debug_lines:
-            if line == "":
-                y_offset += DEBUG_FONT_SIZE // 2
-                continue
-                
-            # Different colors for different sections
-            if line.startswith("==="):
-                color = (255, 255, 0)  # Yellow for headers
-            elif "Asset Management" in line or "Active" in line:
-                color = (0, 255, 0)  # Green for asset system info
-            else:
-                color = DEBUG_TEXT_COLOR  # Default debug color
-                
-            debug_text = self.debug_font.render(line, True, color)
+            debug_text = self.debug_font.render(line, True, DEBUG_TEXT_COLOR)
             screen.blit(debug_text, (10, y_offset))
-            y_offset += DEBUG_FONT_SIZE + 2  # Add some spacing between lines
+            y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
 
 
 class GameStateManager:
