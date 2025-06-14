@@ -6,6 +6,7 @@ from entities.zombies import Zombie, ToughZombie
 from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
 from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
+from systems.zombie_spawner import ZombieSpawner
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
@@ -69,8 +70,8 @@ class GameplayState(GameState):
         self.map_generator = MapGenerator()
 
         # Find a walkable tile near the center for the player
-        center_x = (TILE_SIZE * MAP_WIDTH) // 2
-        center_y = (TILE_SIZE * MAP_HEIGHT) // 2
+        center_x = (TILE_SIZE * WINDOW_WIDTH) // 2
+        center_y = (TILE_SIZE * WINDOW_HEIGHT) // 2
 
         # Search for a walkable tile in a spiral pattern around the center
         player_x, player_y = self._find_walkable_position(center_x, center_y)
@@ -80,12 +81,8 @@ class GameplayState(GameState):
         self.camera_x = 0
         self.camera_y = 0
 
-        # Create a list to store zombies
-        self.zombies = []
-
-        # Create three test zombies at random positions away from the player
-        for _ in range(3):
-            self._spawn_zombie()
+        # Create zombie spawner
+        self.zombie_spawner = ZombieSpawner(self.map_generator)
 
         # Create a list to store items
         self.items = []
@@ -139,61 +136,10 @@ class GameplayState(GameState):
         # If no walkable position found, return the center anyway
         return center_x, center_y
 
-    def _spawn_zombie(self):
-        """Spawn a zombie at a random position away from the player on a walkable tile"""
-        # Choose a random position at least 200 pixels away from the player
-        while True:
-            x = random.randint(0, TILE_SIZE * MAP_WIDTH)
-            y = random.randint(0, TILE_SIZE * MAP_HEIGHT)
-
-            # Calculate distance to player
-            dx = x - self.player.x
-            dy = y - self.player.y
-            distance = (dx * dx + dy * dy) ** 0.5
-
-            # If far enough away and on a walkable tile, create the zombie
-            if distance > 200 and self.map_generator.is_walkable(x, y):
-                # 20% chance to spawn a tough zombie
-                if random.random() < 0.2:
-                    self.zombies.append(ToughZombie(x, y))
-                else:
-                    self.zombies.append(Zombie(x, y))
-                break
-
-    def _spawn_random_weapons(self, count=5):
-        """Spawn random weapons around the map
-
-        Args:
-            count (int): Number of weapons to spawn
-        """
-        # Spawn the specified number of weapons
-        for _ in range(count):
-            # Find a random walkable position on the map
-            self._spawn_random_item()
-
-    def _spawn_random_item(self, near_player=False, weapon_type=None):
-        """Spawn a random item at a random position on the map
-
-        Args:
-            near_player (bool): Whether to spawn the item near the player
-            weapon_type (str, optional): Specific weapon type to spawn
-
-        Returns:
-            Item: The spawned item, or None if no suitable position was found
-        """
-        if near_player:
-            # Find a position within 10 tiles of the player
-            max_distance = 10 * TILE_SIZE
-            min_distance = 3 * TILE_SIZE
-            center_x = self.player.x
-            center_y = self.player.y
-        else:
-            # Find a position anywhere on the map
-            max_distance = min(MAP_WIDTH, MAP_HEIGHT) * TILE_SIZE / 2
-            min_distance = 0
-            # Use center of map as reference point
-            center_x = (MAP_WIDTH * TILE_SIZE) / 2
-            center_y = (MAP_HEIGHT * TILE_SIZE) / 2
+    def _spawn_test_item(self):
+        """Spawn a test item near the player"""
+        # Find a position within 10 tiles of the player
+        max_distance = 10 * TILE_SIZE
 
         # Try to find a walkable position for the item
         for _ in range(50):  # Limit attempts to avoid infinite loop
@@ -282,6 +228,11 @@ class GameplayState(GameState):
         # Update player with map_generator reference
         self.player.update(dt, self.map_generator)
 
+        # Update zombie spawner
+        self.zombie_spawner.update(dt, self.player.x, self.player.y)
+
+        # Update zombies with map_generator reference
+        for zombie in self.zombie_spawner.get_zombies():
         # Handle continuous firing for assault rifle
         if self.left_mouse_down and self.player.weapon and hasattr(self.player.weapon, 'name') and self.player.weapon.name == "Assault Rifle":
             result = self.player.shoot()
@@ -302,18 +253,6 @@ class GameplayState(GameState):
         for i, zombie in enumerate(self.zombies):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
-            # Check for collision with player
-            if self._check_collision(zombie, self.player):
-                # Zombie attacks player
-                zombie.attack(self.player)
-
-                # Check if player is dead
-                if self.player.is_dead():
-                    # Handle game over (will be implemented later)
-                    print("Game Over! Player died.")
-                    # For now, just reset player health
-                    self.player.health = 100
-
         # Update bullets and check for collisions
         bullets_to_remove = []
         for i, bullet in enumerate(self.bullets):
@@ -326,7 +265,7 @@ class GameplayState(GameState):
                 continue
 
             # Check for collision with zombies
-            for j, zombie in enumerate(self.zombies):
+            for j, zombie in enumerate(self.zombie_spawner.get_zombies()):
                 if self._check_collision(bullet, zombie):
                     # Bullet hit zombie
                     zombie_died = zombie.take_damage(bullet.damage)
@@ -418,7 +357,7 @@ class GameplayState(GameState):
             bullet.render(screen, camera_offset)
 
         # Draw zombies with camera offset
-        for zombie in self.zombies:
+        for zombie in self.zombie_spawner.get_zombies():
             zombie.render(screen, camera_offset)
 
         # Draw player with camera offset
@@ -514,7 +453,9 @@ class GameplayState(GameState):
             f"Tile Position: ({int(self.player.x // TILE_SIZE)}, {int(self.player.y // TILE_SIZE)})",
             f"On Object: {self.player.is_on_object}",
             f"Speed Multiplier: {self.player.debug_speed_multiplier:.1f}",
-            f"Zombies: {len(self.zombies)}",
+            f"Active Zombies: {len(self.zombie_spawner.get_zombies())}",
+            f"Game Time: {self.zombie_spawner.game_time:.1f}s",
+            f"Spawn Rate: {self.zombie_spawner._calculate_spawn_rate():.1f}s",
             f"Items: {len(self.items)}",
             f"Bullets: {len(self.bullets)}",
             f"Effects: {len(self.effects)}",
