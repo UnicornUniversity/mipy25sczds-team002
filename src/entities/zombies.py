@@ -76,9 +76,27 @@ class Zombie(Entity):
             dx /= distance
             dy /= distance
 
-            # Move towards player with potentially reduced speed
-            self.x += dx * base_speed * dt
-            self.y += dy * base_speed * dt
+            # Store previous position for collision response
+            prev_x, prev_y = self.x, self.y
+
+            # Try to move in x direction
+            new_x = self.x + dx * base_speed * dt
+            if self.map_generator and not self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
+                # If x movement would cause collision, try to slide along the wall
+                if self.map_generator.is_walkable(self.x + self.width // 2, new_x + self.height // 2):
+                    self.y += dy * base_speed * dt
+            else:
+                self.x = new_x
+
+            # Try to move in y direction
+            new_y = self.y + dy * base_speed * dt
+            if self.map_generator and not self.map_generator.is_walkable(self.x + self.width // 2, new_y + self.height // 2):
+                # If y movement would cause collision, try to slide along the wall
+                if self.map_generator.is_walkable(new_x + self.width // 2, self.y + self.height // 2):
+                    self.x += dx * base_speed * dt
+            else:
+                self.y = new_y
+
             self.is_moving = True
 
             # Update facing direction based on horizontal movement
