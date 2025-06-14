@@ -5,6 +5,7 @@ from entities.player import Player
 from entities.zombies import Zombie, ToughZombie
 from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
+from systems.audio import play_menu_music, play_gameplay_music, stop_music, toggle_music, toggle_sfx, set_music_volume, set_sfx_volume
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
@@ -114,21 +115,78 @@ class MenuState(GameState):
         self.title_text = self.font.render("DEADLOCK", True, (255, 255, 255))
         self.subtitle_font = pygame.font.Font(None, 36)
         self.subtitle_text = self.subtitle_font.render("Press SPACE to start", True, (200, 200, 200))
+        
+        # Music controls info
+        self.info_font = pygame.font.Font(None, 24)
+        self.music_info = [
+            "Music Controls:",
+            "M - Toggle Music",
+            "N - Toggle Sound Effects",
+            "[ - Decrease Music Volume",
+            "] - Increase Music Volume"
+        ]
+        
+        self.music_started = False
+
+    def update(self, dt):
+        """Start menu music when first updated"""
+        if not self.music_started:
+            play_menu_music()
+            self.music_started = True
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 # Přepnout na gameplay
                 return "gameplay"
+            elif event.key == pygame.K_m:
+                # Toggle music
+                toggle_music()
+            elif event.key == pygame.K_n:
+                # Toggle sound effects
+                toggle_sfx()
+            elif event.key == pygame.K_LEFTBRACKET:
+                # Decrease music volume
+                from systems.audio import music_manager
+                current_volume = music_manager.music_volume
+                set_music_volume(max(0.0, current_volume - 0.1))
+            elif event.key == pygame.K_RIGHTBRACKET:
+                # Increase music volume
+                from systems.audio import music_manager
+                current_volume = music_manager.music_volume
+                set_music_volume(min(1.0, current_volume + 0.1))
         return None
 
     def render(self, screen, fps=0):
         screen_rect = screen.get_rect()
-        title_rect = self.title_text.get_rect(center=(screen_rect.centerx, screen_rect.centery - 50))
-        subtitle_rect = self.subtitle_text.get_rect(center=(screen_rect.centerx, screen_rect.centery + 50))
+        title_rect = self.title_text.get_rect(center=(screen_rect.centerx, screen_rect.centery - 100))
+        subtitle_rect = self.subtitle_text.get_rect(center=(screen_rect.centerx, screen_rect.centery - 20))
 
         screen.blit(self.title_text, title_rect)
         screen.blit(self.subtitle_text, subtitle_rect)
+        
+        # Render music controls info
+        y_offset = screen_rect.centery + 50
+        for line in self.music_info:
+            info_text = self.info_font.render(line, True, (150, 150, 150))
+            info_rect = info_text.get_rect(center=(screen_rect.centerx, y_offset))
+            screen.blit(info_text, info_rect)
+            y_offset += 30
+        
+        # Show current music status
+        from systems.audio import music_manager
+        status_lines = [
+            f"Music: {'ON' if music_manager.music_enabled else 'OFF'}",
+            f"Music Volume: {int(music_manager.music_volume * 100)}%",
+            f"SFX Volume: {int(music_manager.sfx_volume * 100)}%"
+        ]
+        
+        y_offset += 20
+        for line in status_lines:
+            status_text = self.info_font.render(line, True, (100, 255, 100))
+            status_rect = status_text.get_rect(center=(screen_rect.centerx, y_offset))
+            screen.blit(status_text, status_rect)
+            y_offset += 25
 
 
 class GameplayState(GameState):
@@ -185,6 +243,9 @@ class GameplayState(GameState):
 
         # Visual effects
         self.effects = []
+        
+        # Music state
+        self.gameplay_music_started = False
 
     def _find_walkable_position(self, center_x, center_y):
         """Find a walkable position near the specified center coordinates"""
@@ -325,6 +386,22 @@ class GameplayState(GameState):
                 # Reload weapon
                 if self.player.weapon:
                     self.player.weapon.reload()
+            elif event.key == pygame.K_m:
+                # Toggle music
+                toggle_music()
+            elif event.key == pygame.K_n:
+                # Toggle sound effects
+                toggle_sfx()
+            elif event.key == pygame.K_LEFTBRACKET:
+                # Decrease music volume
+                from systems.audio import music_manager
+                current_volume = music_manager.music_volume
+                set_music_volume(max(0.0, current_volume - 0.1))
+            elif event.key == pygame.K_RIGHTBRACKET:
+                # Increase music volume
+                from systems.audio import music_manager
+                current_volume = music_manager.music_volume
+                set_music_volume(min(1.0, current_volume + 0.1))
         elif event.type == pygame.MOUSEMOTION:
             # Update player aim based on mouse position
             mouse_pos = pygame.mouse.get_pos()
@@ -355,6 +432,11 @@ class GameplayState(GameState):
         return None
 
     def update(self, dt):
+        # Start gameplay music when first updated
+        if not self.gameplay_music_started:
+            play_gameplay_music()
+            self.gameplay_music_started = True
+            
         # Update player with map_generator reference
         self.player.update(dt, self.map_generator)
 
@@ -607,6 +689,10 @@ class GameplayState(GameState):
 
     def _render_debug_info(self, screen, fps):
         """Render debug information on the screen"""
+        # Get music status for debug info
+        from systems.audio import music_manager
+        music_status = music_manager.get_status()
+        
         # Create debug text lines
         debug_lines = [
             f"FPS: {fps:.1f}",
@@ -622,7 +708,10 @@ class GameplayState(GameState):
             f"Weapon: {self.player.weapon.name if self.player.weapon else 'None'}",
             f"Ammo: {self.player.weapon.ammo}/{self.player.weapon.magazine_size if self.player.weapon else 0}",
             f"Reloading: {self.player.weapon.is_reloading if self.player.weapon else False}",
-            f"Pickup Message: {self.pickup_message if self.pickup_timer > 0 else 'None'}"
+            f"Pickup Message: {self.pickup_message if self.pickup_timer > 0 else 'None'}",
+            f"Music: {music_status['current_track'] or 'None'} ({music_status['current_category'] or 'None'})",
+            f"Music Volume: {int(music_status['music_volume'] * 100)}%",
+            f"Music Enabled: {music_status['music_enabled']}"
         ]
 
         # Render each line of debug text

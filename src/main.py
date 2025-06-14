@@ -21,6 +21,10 @@ def main():
     # Debug: Print information about loaded sprites
     debug_sprite_info()
 
+    # Initialize music system
+    from systems.audio import music_manager
+    print("Music system initialized")
+
     # Init game systems
     settings = Settings()
     game_state_manager = GameStateManager()
@@ -39,6 +43,9 @@ def main():
 
         # Update
         game_state_manager.update(dt)
+
+        # Update music manager
+        music_manager.update(dt)
 
         # Render
         screen.fill((0, 0, 0))
