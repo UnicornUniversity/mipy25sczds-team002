@@ -408,10 +408,9 @@ class GameplayState(GameState):
 
                 # Check if player is dead
                 if self.player.is_dead():
-                    # Handle game over (will be implemented later)
-                    print("Game Over! Player died.")
-                    # For now, just reset player health
-                    self.player.health = 100
+                    # Handle game over
+                    self._handle_game_over()
+                    return  # Stop updating the game state
 
         # Update bullets and check for collisions
         bullets_to_remove = []
@@ -630,6 +629,30 @@ class GameplayState(GameState):
             debug_text = self.debug_font.render(line, True, DEBUG_TEXT_COLOR)
             screen.blit(debug_text, (10, y_offset))
             y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
+
+    def _handle_game_over(self):
+        """Handle game over state"""
+        # Clear all zombies and bullets
+        self.zombies.clear()
+        self.bullets.clear()
+        
+        # Reset player health
+        self.player.health = PLAYER_MAX_HEALTH
+        
+        # Reset player position to center of map
+        center_x = (TILE_SIZE * MAP_WIDTH) // 2
+        center_y = (TILE_SIZE * MAP_HEIGHT) // 2
+        player_x, player_y = self._find_walkable_position(center_x, center_y)
+        self.player.x = player_x
+        self.player.y = player_y
+        
+        # Spawn new zombies
+        for _ in range(3):
+            self._spawn_zombie()
+            
+        # Add game over message
+        self.pickup_message = "Game Over! You died and respawned."
+        self.pickup_timer = PICKUP_NOTIFICATION_DURATION
 
 
 class GameStateManager:
