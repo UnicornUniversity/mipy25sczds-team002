@@ -21,6 +21,7 @@ def main():
     running = True
     while running:
         dt = clock.tick(FPS) / 1000.0
+        current_fps = clock.get_fps()
 
         # Event handling
         for event in pygame.event.get():
@@ -33,7 +34,7 @@ def main():
 
         # Render
         screen.fill((0, 0, 0))
-        game_state_manager.render(screen)
+        game_state_manager.render(screen, current_fps)
         pygame.display.flip()
 
     pygame.quit()
