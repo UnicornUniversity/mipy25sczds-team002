@@ -21,6 +21,8 @@ DARK_BROWN = (101, 67, 33)
 # Sizes
 PLAYER_SIZE = 32
 ENEMY_SIZE = 24
+ZOMBIE_COLLISION_RADIUS = 20  # Radius for zombie-zombie collision
+ZOMBIE_OBSTACLE_COLLISION_RADIUS = 16  # Radius for zombie-obstacle collision
 
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
@@ -45,6 +47,9 @@ ZOMBIE_DAMAGE = 5
 TOUGH_ZOMBIE_HEALTH = 60  # Tougher than regular zombies
 TOUGH_ZOMBIE_DAMAGE = 10  # More damage than regular zombies
 ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
+ZOMBIE_ATTACK_RANGE = 30  # Distance at which zombie can attack player
+ZOMBIE_ATTACK_DURATION = 0.3  # Duration of attack animation
+ZOMBIE_ATTACK_KNOCKBACK = 50  # How far to knock back player when hit
 
 # Background
 DOT_SIZE = 2
@@ -61,6 +66,12 @@ EDGE_THICKNESS = 5  # thickness of forest edge in tiles
 MIN_BUILDINGS = 4  # Minimum number of buildings to generate
 MAX_BUILDINGS = 7  # Maximum number of buildings to generate
 RANDOM_OBJECT_DENSITY = 0.03  # Probability of placing a random object (was 0.05)
+
+# Sprites
+SPRITE_SIZE = 64  # Size of each sprite (64x64)
+SPRITE_GAP = 10    # Gap between sprites (10 pixels)
+SPRITESHEET_COLS = 27  # Number of columns in the spritesheet
+SPRITESHEET_ROWS = 20  # Number of rows in the spritesheet
 
 # Tile types
 TILE_GRASS = 0

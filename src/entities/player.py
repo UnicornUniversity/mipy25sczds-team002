@@ -3,6 +3,8 @@ import math
 from entities.entity import Entity
 from systems.weapons import Pistol
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
+from utils.sprite_loader import get_sprite, get_texture
+
 
 class Player(Entity):
     """Player entity controlled by the user"""
@@ -26,6 +28,13 @@ class Player(Entity):
         # Weapon handling
         self.weapon = Pistol()  # Start with a pistol
         self.aim_angle = 0  # Angle in radians (0 = right, pi/2 = down)
+
+        # Animation tracking for sprites
+        self.animation_time = 0
+        self.is_moving = False
+
+        # Direction tracking for sprite flipping
+        self.facing_left = False  # True if facing left, False if facing right
 
     def update(self, dt, map_generator=None):
         """Update player state based on input
@@ -68,15 +77,32 @@ class Player(Entity):
         # Store previous position for collision detection
         prev_x, prev_y = self.x, self.y
 
-        # Move player based on arrow keys or WASD
+        # Reset movement flag
+        self.is_moving = False
+
+        # Move player based on arrow keys or WASD and track direction
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.x -= base_speed * dt
+            self.is_moving = True
+            self.facing_left = True  # Facing left
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.x += base_speed * dt
+            self.is_moving = True
+            self.facing_left = False  # Facing right
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             self.y -= base_speed * dt
+            self.is_moving = True
+            # Don't change horizontal facing for vertical movement
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.y += base_speed * dt
+            self.is_moving = True
+            # Don't change horizontal facing for vertical movement
+
+        # Update animation time
+        if self.is_moving:
+            self.animation_time += dt
+        else:
+            self.animation_time = 0
 
         # Boundary checking to prevent player from leaving the map
         map_width_px = MAP_WIDTH * TILE_SIZE
@@ -163,30 +189,57 @@ class Player(Entity):
         return None
 
     def render(self, screen, camera_offset=(0, 0)):
-        """Render the player as a circle with aim direction
+        """Render the player with a sprite that rotates based on weapon aim direction
 
         Args:
             screen (pygame.Surface): Screen to render on
             camera_offset (tuple): Camera offset (x, y)
         """
-        # Calculate center position
-        center_x = self.rect.x + self.width // 2 - camera_offset[0]
-        center_y = self.rect.y + self.height // 2 - camera_offset[1]
+        # Calculate screen position
+        screen_x = self.rect.x - camera_offset[0]
+        screen_y = self.rect.y - camera_offset[1]
 
-        # Create a transparent surface for the player when on an object
-        if self.is_on_object:
-            # Create a surface with per-pixel alpha
-            circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            # Draw a semi-transparent circle (128 is 50% opacity)
-            pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
-            # Blit the surface to the screen
-            screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
+        # Calculate center position (needed for both sprite and fallback rendering)
+        center_x = screen_x + self.width // 2
+        center_y = screen_y + self.height // 2
+
+        # Get player weapon sprite that rotates with aim
+        weapon_sprite = get_texture('survivor', 'survivor1_machine')
+
+        # We'll use the weapon sprite as the main player sprite
+        if weapon_sprite:
+                # Convert aim angle from radians to degrees for rotation
+                # Subtract 180 degrees (90 for default orientation + 90 for left rotation)
+                rotation_angle = math.degrees(-self.aim_angle)
+
+                # Rotate the weapon sprite
+                rotated_weapon = pygame.transform.rotate(weapon_sprite, rotation_angle)
+
+                # Calculate position to center the rotated weapon on the player
+                weapon_x = center_x - rotated_weapon.get_width() // 2
+                weapon_y = center_y - rotated_weapon.get_height() // 2
+
+                # Apply transparency if on object
+                if self.is_on_object:
+                    rotated_weapon.set_alpha(180)  # Semi-transparent
+
+                # Draw the rotated weapon sprite
+                screen.blit(rotated_weapon, (weapon_x, weapon_y))
         else:
-            # Draw player normally when not on an object
-            pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+            # Fallback: draw circle if sprite not available
+            if self.is_on_object:
+                # Create a transparent surface for the player when on an object
+                circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                # Draw a semi-transparent circle (128 is 50% opacity)
+                pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
+                # Blit the surface to the screen
+                screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
+            else:
+                # Draw player normally when not on an object
+                pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
 
-        # Draw aim direction line
-        line_length = self.width  # Length of the aim line
-        end_x = center_x + math.cos(self.aim_angle) * line_length
-        end_y = center_y + math.sin(self.aim_angle) * line_length
-        pygame.draw.line(screen, (0, 0, 0), (center_x, center_y), (end_x, end_y), 2)
+                # Draw aim direction line as fallback
+                line_length = self.width  # Length of the aim line
+                end_x = center_x + math.cos(self.aim_angle) * line_length
+                end_y = center_y + math.sin(self.aim_angle) * line_length
+                pygame.draw.line(screen, (0, 0, 0), (center_x, center_y), (end_x, end_y), 2)
