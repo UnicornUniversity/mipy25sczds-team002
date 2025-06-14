@@ -467,7 +467,7 @@ class GameplayState(GameState):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
             # Check for zombie-zombie collisions
-            for j, other_zombie in enumerate(self.zombies):
+            for j, other_zombie in enumerate(self.zombie_spawner.get_zombies()):
                 if i != j:  # Don't check collision with self
                     # Calculate distance between zombie centers
                     dx = (zombie.x + zombie.width/2) - (other_zombie.x + other_zombie.width/2)

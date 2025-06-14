@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -52,7 +52,7 @@
     "Python.main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "alex-spawn",
+    "git-widget-placeholder": "#28 on alex-spawn",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon",
@@ -129,6 +129,7 @@
       <workItem from="1749915106613" duration="1745000" />
       <workItem from="1749916876064" duration="168000" />
       <workItem from="1749917055824" duration="411000" />
+      <workItem from="1749917479841" duration="351000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -210,7 +211,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749916990011</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency.">
+      <option name="closed" value="true" />
+      <created>1749917561480</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1749917561480</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -238,7 +247,8 @@
     <MESSAGE value="Add visual effect classes: implement `Effect` base class and derived classes (`MuzzleFlash`, `BulletImpact`, `BloodSplatter`) for handling and rendering dynamic visual effects." />
     <MESSAGE value="Implement texture atlas system: add `TextureAtlas` for efficient sprite management, refactor `AssetManager` to integrate the atlas, introduce backward compatibility for legacy sprite access, update extraction logic for organized sprite loading from spritesheets, and enhance debugging support with new utilities." />
     <MESSAGE value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
+    <MESSAGE value="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
+    <option name="LAST_COMMIT_MESSAGE" value="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749917300574" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
