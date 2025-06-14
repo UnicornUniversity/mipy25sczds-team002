@@ -9,7 +9,8 @@ from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
     DEBUG_FONT_SIZE, DEBUG_TEXT_COLOR,
-    PLAYER_MAX_HEALTH, PICKUP_NOTIFICATION_DURATION
+    PLAYER_MAX_HEALTH, PICKUP_NOTIFICATION_DURATION,
+    ZOMBIE_COLLISION_RADIUS
 )
 from utils.sprite_loader import get_asset_info
 
@@ -376,6 +377,29 @@ class GameplayState(GameState):
         zombies_to_remove = []
         for i, zombie in enumerate(self.zombies):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
+
+            # Check for zombie-zombie collisions
+            for j, other_zombie in enumerate(self.zombies):
+                if i != j:  # Don't check collision with self
+                    # Calculate distance between zombie centers
+                    dx = (zombie.x + zombie.width/2) - (other_zombie.x + other_zombie.width/2)
+                    dy = (zombie.y + zombie.height/2) - (other_zombie.y + other_zombie.height/2)
+                    distance = math.sqrt(dx * dx + dy * dy)
+                    
+                    # If zombies are too close, push them apart
+                    min_distance = ZOMBIE_COLLISION_RADIUS * 2
+                    if distance < min_distance:
+                        # Calculate push direction and force
+                        if distance > 0:  # Avoid division by zero
+                            push_x = dx / distance
+                            push_y = dy / distance
+                            push_force = (min_distance - distance) * 0.5
+                            
+                            # Move zombies apart
+                            zombie.x += push_x * push_force
+                            zombie.y += push_y * push_force
+                            other_zombie.x -= push_x * push_force
+                            other_zombie.y -= push_y * push_force
 
             # Check for collision with player
             if self._check_collision(zombie, self.player):

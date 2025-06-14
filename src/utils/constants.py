@@ -21,6 +21,7 @@ DARK_BROWN = (101, 67, 33)
 # Sizes
 PLAYER_SIZE = 32
 ENEMY_SIZE = 24
+ZOMBIE_COLLISION_RADIUS = 20  # Radius for zombie-zombie collision
 
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
