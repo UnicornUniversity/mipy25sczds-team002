@@ -5,13 +5,88 @@ from entities.player import Player
 from entities.zombies import Zombie, ToughZombie
 from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
-from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
     CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
     DEBUG_FONT_SIZE, DEBUG_TEXT_COLOR,
     PLAYER_MAX_HEALTH, PICKUP_NOTIFICATION_DURATION
 )
+from utils.sprite_loader import get_asset_info
+
+
+# Simple effect classes to replace missing systems.effects
+class MuzzleFlash:
+    """Simple muzzle flash effect"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.lifetime = 0.1  # Very short flash
+        self.age = 0
+        
+    def update(self, dt):
+        self.age += dt
+        return self.age < self.lifetime
+        
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            # Simple yellow circle for muzzle flash
+            screen_x = int(self.x - camera_offset[0])
+            screen_y = int(self.y - camera_offset[1])
+            radius = int(8 * (1 - self.age / self.lifetime))  # Shrinking
+            if radius > 0:
+                pygame.draw.circle(screen, (255, 255, 0), (screen_x, screen_y), radius)
+
+
+class BulletImpact:
+    """Simple bullet impact effect"""
+    def __init__(self, x, y, color=(255, 255, 255)):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.lifetime = 0.2
+        self.age = 0
+        
+    def update(self, dt):
+        self.age += dt
+        return self.age < self.lifetime
+        
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            # Simple spark effect
+            screen_x = int(self.x - camera_offset[0])
+            screen_y = int(self.y - camera_offset[1])
+            alpha = int(255 * (1 - self.age / self.lifetime))
+            color_with_alpha = (*self.color, alpha)
+            
+            # Draw small cross for impact
+            pygame.draw.line(screen, self.color, (screen_x-3, screen_y), (screen_x+3, screen_y), 2)
+            pygame.draw.line(screen, self.color, (screen_x, screen_y-3), (screen_x, screen_y+3), 2)
+
+
+class BloodSplatter:
+    """Simple blood splatter effect"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.lifetime = 0.5
+        self.age = 0
+        
+    def update(self, dt):
+        self.age += dt
+        return self.age < self.lifetime
+        
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            # Simple red circle for blood
+            screen_x = int(self.x - camera_offset[0])
+            screen_y = int(self.y - camera_offset[1])
+            alpha = int(255 * (1 - self.age / self.lifetime))
+            radius = int(4 + 2 * (self.age / self.lifetime))  # Growing
+            
+            # Create surface with alpha for transparency
+            blood_surface = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)
+            pygame.draw.circle(blood_surface, (150, 0, 0, alpha), (radius, radius), radius)
+            screen.blit(blood_surface, (screen_x - radius, screen_y - radius))
 
 
 class GameState:
@@ -368,8 +443,9 @@ class GameplayState(GameState):
         # Update effects
         effects_to_remove = []
         for i, effect in enumerate(self.effects):
-            effect.update(dt)
-            if effect.finished:
+            # update() returns True if effect should continue, False if finished
+            should_continue = effect.update(dt)
+            if not should_continue:
                 effects_to_remove.append(i)
 
         # Remove finished effects
@@ -475,7 +551,7 @@ class GameplayState(GameState):
         muzzle_y = self.player.y + self.player.height // 2 + math.sin(self.player.aim_angle) * spawn_distance
 
         # Create muzzle flash effect
-        flash = MuzzleFlash(muzzle_x, muzzle_y, self.player.aim_angle)
+        flash = MuzzleFlash(muzzle_x, muzzle_y)
         self.effects.append(flash)
 
     def _add_bullet_impact_effect(self, x, y, color=None):

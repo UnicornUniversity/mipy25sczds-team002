@@ -3,6 +3,7 @@ import sys
 from game.settings import Settings
 from game.game_state import GameStateManager
 from utils.constants import WINDOW_WIDTH, WINDOW_HEIGHT, FPS
+from utils.sprite_loader import load_all_assets
 
 
 def main():
@@ -13,6 +14,10 @@ def main():
     pygame.display.set_caption("Deadlock")
     clock = pygame.time.Clock()
 
+    # Initialize asset management system
+    print("Initializing Deadlock...")
+    load_all_assets()
+
     # Init game systems
     settings = Settings()
     game_state_manager = GameStateManager()
@@ -21,7 +26,7 @@ def main():
     running = True
     while running:
         dt = clock.tick(FPS) / 1000.0
-        current_fps = clock.get_fps()
+        fps = clock.get_fps()
 
         # Event handling
         for event in pygame.event.get():
@@ -34,7 +39,7 @@ def main():
 
         # Render
         screen.fill((0, 0, 0))
-        game_state_manager.render(screen, current_fps)
+        game_state_manager.render(screen, fps)
         pygame.display.flip()
 
     pygame.quit()
