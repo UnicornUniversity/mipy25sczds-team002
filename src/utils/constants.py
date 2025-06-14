@@ -78,8 +78,50 @@ PICKUP_NOTIFICATION_DURATION = 3.0  # seconds
 BULLET_SIZE = 6
 BULLET_SPEED = 500  # pixels per second
 BULLET_COLOR = BLACK
+
+# Pistol - Balanced damage/fire rate
 PISTOL_DAMAGE = 10
 PISTOL_SPREAD = 0.2  # radians (about 11 degrees)
 PISTOL_MAGAZINE_SIZE = 12
 PISTOL_RELOAD_TIME = 1.5  # seconds
-WEAPON_COOLDOWN = 0.3  # seconds between shots
+PISTOL_COOLDOWN = 0.3  # seconds between shots
+PISTOL_BULLET_COLOR = BLACK
+
+# Shotgun - High damage at close range, slow reload
+SHOTGUN_DAMAGE = 5  # per pellet
+SHOTGUN_PELLETS = 8  # number of pellets per shot
+SHOTGUN_SPREAD = 0.4  # radians (wider spread)
+SHOTGUN_MAGAZINE_SIZE = 6
+SHOTGUN_RELOAD_TIME = 2.5  # seconds
+SHOTGUN_COOLDOWN = 0.8  # seconds between shots
+SHOTGUN_BULLET_COLOR = RED
+
+# Assault Rifle - Rapid fire, medium damage
+ASSAULT_RIFLE_DAMAGE = 8
+ASSAULT_RIFLE_SPREAD = 0.25  # radians
+ASSAULT_RIFLE_MAGAZINE_SIZE = 30
+ASSAULT_RIFLE_RELOAD_TIME = 2.0  # seconds
+ASSAULT_RIFLE_COOLDOWN = 0.1  # seconds between shots (rapid fire)
+ASSAULT_RIFLE_BULLET_COLOR = BLUE
+
+# Sniper Rifle - High damage, slow fire rate, high accuracy
+SNIPER_RIFLE_DAMAGE = 50
+SNIPER_RIFLE_SPREAD = 0.05  # radians (very accurate)
+SNIPER_RIFLE_MAGAZINE_SIZE = 5
+SNIPER_RIFLE_RELOAD_TIME = 3.0  # seconds
+SNIPER_RIFLE_COOLDOWN = 1.5  # seconds between shots
+SNIPER_RIFLE_BULLET_COLOR = GREEN
+SNIPER_RIFLE_BULLET_SPEED = 800  # faster bullet
+
+# Bazooka - Explosive damage, very slow fire rate
+BAZOOKA_DAMAGE = 100
+BAZOOKA_SPREAD = 0.1  # radians
+BAZOOKA_MAGAZINE_SIZE = 1
+BAZOOKA_RELOAD_TIME = 4.0  # seconds
+BAZOOKA_COOLDOWN = 2.0  # seconds between shots
+BAZOOKA_BULLET_COLOR = BROWN
+BAZOOKA_EXPLOSION_RADIUS = 100  # pixels
+BAZOOKA_BULLET_SPEED = 300  # slower bullet
+
+# General weapon settings
+WEAPON_COOLDOWN = 0.3  # default cooldown for weapons
