@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;MrAlois&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/UnicornUniversity/mipy25sczds-team002.git&quot;,
+    &quot;accountId&quot;: &quot;c0a5378d-86eb-40dc-a694-cf7f42a51d45&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="2yUPfxbNloGk338SdM6JIa7yN4J" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.main.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "alex-spawn",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\fonts" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\utils" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\systems" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\spritesheets" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="mipy25sczds-team002" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-PY-251.25410.159" />
+        <option value="bundled-python-sdk-e0ed3721d81e-36ea0e71a18c-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.25410.159" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="" />
+      <created>1749886285730</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1749886285730</updated>
+      <workItem from="1749886286886" duration="261000" />
+      <workItem from="1749886573176" duration="22621000" />
+      <workItem from="1749912663832" duration="2394000" />
+      <workItem from="1749915093156" duration="2000" />
+      <workItem from="1749915106613" duration="1745000" />
+      <workItem from="1749916876064" duration="168000" />
+      <workItem from="1749917055824" duration="411000" />
+    </task>
+    <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
+      <option name="closed" value="true" />
+      <created>1749888686526</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1749888686526</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Refactor and enhance: rename project to &quot;Deadlock,&quot; update constants, add camera system, implement background rendering, create player and entity base classes, and add game design documentation.">
+      <option name="closed" value="true" />
+      <created>1749896685064</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1749896685064</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Add zombie entities: implement Zombie class, spawning logic, movement toward the player, and rendering functionality.">
+      <option name="closed" value="true" />
+      <created>1749904444299</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1749904444299</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Add map generation system: implement `MapGenerator` with tile-based map creation, introduce debug mode in gameplay state, adjust player and zombie behaviors for tile interactions, and add building templates.">
+      <option name="closed" value="true" />
+      <created>1749907765599</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1749907765599</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Add weapon, item, and advanced entity systems: implement item pickups, health packs, weapons (Pistol), bullets, zombie variants (ToughZombie), and player combat mechanics; enhance movement, aiming, collisions, and notifications.">
+      <option name="closed" value="true" />
+      <created>1749909998496</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1749909998496</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Add weapon hierarchy and effect systems: implement multiple weapon types (Pistol, Shotgun, Assault Rifle, Sniper Rifle, Bazooka) with unique attributes, enhance item spawning with tier-based progression, integrate visual effects for muzzle flashes, bullet impacts, and blood splatter, and update player continuous firing mechanics.">
+      <option name="closed" value="true" />
+      <created>1749911563428</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1749911563428</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Add visual effect classes: implement `Effect` base class and derived classes (`MuzzleFlash`, `BulletImpact`, `BloodSplatter`) for handling and rendering dynamic visual effects.">
+      <option name="closed" value="true" />
+      <created>1749911635936</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1749911635936</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Add visual effect classes: implement `Effect` base class and derived classes (`MuzzleFlash`, `BulletImpact`, `BloodSplatter`) for handling and rendering dynamic visual effects.">
+      <option name="closed" value="true" />
+      <created>1749912633707</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1749912633707</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Implement texture atlas system: add `TextureAtlas` for efficient sprite management, refactor `AssetManager` to integrate the atlas, introduce backward compatibility for legacy sprite access, update extraction logic for organized sprite loading from spritesheets, and enhance debugging support with new utilities.">
+      <option name="closed" value="true" />
+      <created>1749916651162</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1749916651162</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting.">
+      <option name="closed" value="true" />
+      <created>1749916990009</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1749916990011</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initialize project structure with core game logic, settings, constants, and main script. Add requirements and initial tests." />
+    <MESSAGE value="Initialize project: add game framework, constants, settings, and basic game states." />
+    <MESSAGE value="Refactor and enhance: rename project to &quot;Deadlock,&quot; update constants, add camera system, implement background rendering, create player and entity base classes, and add game design documentation." />
+    <MESSAGE value="Add zombie entities: implement Zombie class, spawning logic, movement toward the player, and rendering functionality." />
+    <MESSAGE value="Add map generation system: implement `MapGenerator` with tile-based map creation, introduce debug mode in gameplay state, adjust player and zombie behaviors for tile interactions, and add building templates." />
+    <MESSAGE value="Add weapon, item, and advanced entity systems: implement item pickups, health packs, weapons (Pistol), bullets, zombie variants (ToughZombie), and player combat mechanics; enhance movement, aiming, collisions, and notifications." />
+    <MESSAGE value="Add weapon hierarchy and effect systems: implement multiple weapon types (Pistol, Shotgun, Assault Rifle, Sniper Rifle, Bazooka) with unique attributes, enhance item spawning with tier-based progression, integrate visual effects for muzzle flashes, bullet impacts, and blood splatter, and update player continuous firing mechanics." />
+    <MESSAGE value="Add visual effect classes: implement `Effect` base class and derived classes (`MuzzleFlash`, `BulletImpact`, `BloodSplatter`) for handling and rendering dynamic visual effects." />
+    <MESSAGE value="Implement texture atlas system: add `TextureAtlas` for efficient sprite management, refactor `AssetManager` to integrate the atlas, introduce backward compatibility for legacy sprite access, update extraction logic for organized sprite loading from spritesheets, and enhance debugging support with new utilities." />
+    <MESSAGE value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
+    <option name="LAST_COMMIT_MESSAGE" value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749917300574" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+  </component>
+</project>
