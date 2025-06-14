@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mipy-game"
+version = "0.1.0"
+description = "Jednoduchá hra vytvořená v Pygame pro kurz MIPY"
+requires-python = ">=3.8"
+
+# Pouze základní závislosti
+dependencies = [
+    "pygame>=2.0.0",
+]
+
+[project.scripts]
+mipy-game = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

@@ -1,0 +1,18 @@
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+FPS = 60
+
+# Barvy (RGB)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# Velikosti
+PLAYER_SIZE = 32
+ENEMY_SIZE = 24
+
+# Rychlosti
+PLAYER_SPEED = 20
+ENEMY_SPEED = 100
