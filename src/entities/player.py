@@ -3,6 +3,7 @@ import math
 from entities.entity import Entity
 from systems.weapons import Pistol
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
+from utils.sprite_loader import get_sprite
 
 
 class Player(Entity):
@@ -194,12 +195,16 @@ class Player(Entity):
             screen (pygame.Surface): Screen to render on
             camera_offset (tuple): Camera offset (x, y)
         """
-        # Use only player_idle sprite for consistency - always the same character
-        sprite = get_sprite('player_idle')
-
         # Calculate screen position
         screen_x = self.rect.x - camera_offset[0]
         screen_y = self.rect.y - camera_offset[1]
+        
+        # Calculate center position (needed for both sprite and fallback rendering)
+        center_x = screen_x + self.width // 2
+        center_y = screen_y + self.height // 2
+
+        # Use only player_idle sprite for consistency - always the same character
+        sprite = get_sprite('player_idle')
 
         if sprite:
             # Flip sprite horizontally if facing left
@@ -226,9 +231,6 @@ class Player(Entity):
                 screen.blit(sprite, (sprite_x, sprite_y))
         else:
             # Fallback: draw circle if sprite not available
-            center_x = screen_x + self.width // 2
-            center_y = screen_y + self.height // 2
-
             if self.is_on_object:
                 # Create a transparent surface for the player when on an object
                 circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)

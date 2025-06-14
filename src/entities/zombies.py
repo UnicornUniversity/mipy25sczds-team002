@@ -7,6 +7,7 @@ from utils.constants import (
     TOUGH_ZOMBIE_HEALTH, TOUGH_ZOMBIE_DAMAGE, TOUGH_ZOMBIE_SPEED,
     RED
 )
+from utils.sprite_loader import get_sprite
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -24,6 +25,13 @@ class Zombie(Entity):
         self.map_generator = None  # Will be set by GameplayState
         self.health = ZOMBIE_HEALTH
         self.attack_timer = 0  # Timer for attack cooldown
+        
+        # Animation tracking for sprites
+        self.animation_time = 0
+        self.is_moving = False
+        
+        # Direction tracking for sprite flipping
+        self.facing_left = False  # True if facing left, False if facing right
 
     def update(self, dt, player_x, player_y, map_generator=None):
         """Update zombie state to move towards player
@@ -136,12 +144,16 @@ class Zombie(Entity):
             screen (pygame.Surface): Screen to render on
             camera_offset (tuple): Camera offset (x, y)
         """
-        # Use only zombie_basic_1 sprite for consistency - always the same zombie
-        sprite = get_sprite('zombie_basic_1')
-
         # Calculate screen position
         screen_x = self.rect.x - camera_offset[0]
         screen_y = self.rect.y - camera_offset[1]
+        
+        # Calculate center position (needed for both sprite and fallback rendering)
+        center_x = screen_x + self.width // 2
+        center_y = screen_y + self.height // 2
+
+        # Use only zombie_basic_1 sprite for consistency - always the same zombie
+        sprite = get_sprite('zombie_basic_1')
 
         if sprite:
             # Flip sprite horizontally if facing left
@@ -168,20 +180,16 @@ class Zombie(Entity):
                 screen.blit(sprite, (sprite_x, sprite_y))
         else:
             # Fallback: draw circle if sprite not available
-            center_x = screen_x + self.width // 2
-            center_y = screen_y + self.height // 2
-
-        # Create a transparent surface for the zombie when on an object
-        if self.is_on_object:
-            # Create a surface with per-pixel alpha
-            circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            # Draw a semi-transparent circle (128 is 50% opacity)
-            pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
-            # Blit the surface to the screen
-            screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
-        else:
-            # Draw zombie normally when not on an object
-            pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
+            if self.is_on_object:
+                # Create a transparent surface for the zombie when on an object
+                circle_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                # Draw a semi-transparent circle (128 is 50% opacity)
+                pygame.draw.circle(circle_surface, (*self.color, 128), (self.width // 2, self.height // 2), self.width // 2)
+                # Blit the surface to the screen
+                screen.blit(circle_surface, (center_x - self.width // 2, center_y - self.height // 2))
+            else:
+                # Draw zombie normally when not on an object
+                pygame.draw.circle(screen, self.color, (center_x, center_y), self.width // 2)
 
 
 class ToughZombie(Zombie):
