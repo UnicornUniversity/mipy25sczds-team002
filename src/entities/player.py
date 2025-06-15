@@ -1,10 +1,11 @@
 import pygame
 import math
 from entities.entity import Entity
-from systems.weapons import Pistol
+from systems.weapons import Pistol, Shotgun, AssaultRifle, SniperRifle, Bazooka
+from systems import collisions
+from systems.audio import play_sound
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
 from utils.sprite_loader import get_sprite, get_texture
-from systems import collisions
 
 
 class Player(Entity):
@@ -191,6 +192,9 @@ class Player(Entity):
                 self.weapon.reload()
 
             if self.weapon.can_shoot():
+                # Přehraj zvuk střelby
+                play_sound("weapons_gun_shot", volume=0.5)
+                
                 # Calculate bullet spawn position (slightly in front of player in aim direction)
                 spawn_distance = self.width // 2 + 5  # 5 pixels in front of player edge
                 spawn_x = self.x + self.width // 2 + math.cos(self.aim_angle) * spawn_distance

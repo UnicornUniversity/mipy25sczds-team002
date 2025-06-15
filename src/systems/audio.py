@@ -267,12 +267,10 @@ class MusicManager:
             sound = self.sound_effects[sound_name]
             
             if volume is not None:
-                # Create a copy with custom volume
-                sound_copy = sound.copy()
-                sound_copy.set_volume(max(0.0, min(1.0, volume)))
-                sound_copy.play()
-            else:
-                sound.play()
+                # Set volume and play
+                sound.set_volume(max(0.0, min(1.0, volume)))
+            
+            sound.play()
                 
         except pygame.error as e:
             print(f"Failed to play sound {sound_name}: {e}")
