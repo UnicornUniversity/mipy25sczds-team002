@@ -6,12 +6,25 @@ This module provides a comprehensive system for loading, optimizing, and managin
 all art assets in the game. Ensures visual consistency and performance optimization.
 Implements a texture atlas for efficient sprite management.
 """
+import sys
 
 import pygame
 import os
 from typing import Dict, Tuple, Optional, List, Any, Set
 from utils.constants import TILE_SIZE, SPRITE_SIZE, SPRITE_GAP, SPRITESHEET_COLS, SPRITESHEET_ROWS, PLAYER_SIZE, \
     ITEM_SIZE
+
+
+def get_assets_path():
+    """Získá správnou cestu k assets složce jak ve vývojovém prostředí, tak v EXE"""
+    if getattr(sys, 'frozen', False):
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, 'assets')
+        else:
+            return os.path.join(os.path.dirname(sys.executable), 'assets')
+    else:
+        return os.path.join(os.path.dirname(__file__), '..', '..', 'assets')
+
 
 
 class TextureAtlas:
@@ -92,17 +105,26 @@ class AssetManager:
     """
 
     def __init__(self):
+        self.assets_root = get_assets_path()
+        self.images_path = os.path.join(self.assets_root, 'images')
+        self.sprites_path = os.path.join(self.images_path, 'sprites')
+        self.spritesheets_path = os.path.join(self.images_path, 'spritesheets')
+
+        print(f"Assets root: {self.assets_root}")
+        print(f"Images path: {self.images_path}")
+        print(f"Sprites path: {self.sprites_path}")
+
+        if not os.path.exists(self.assets_root):
+            print(f"WARNING: Assets folder not found at {self.assets_root}")
+        if not os.path.exists(self.sprites_path):
+            print(f"WARNING: Sprites folder not found at {self.sprites_path}")
+
         self._sprites: Dict[str, pygame.Surface] = {}
         self._spritesheets: Dict[str, pygame.Surface] = {}
         self._texture_atlas = TextureAtlas()
         self._loaded = False
         self._missing_texture_color = (255, 0, 255)  # Pink color for missing textures
 
-        # Asset paths
-        self.assets_root = os.path.join(os.path.dirname(__file__), '..', '..', 'assets')
-        self.images_path = os.path.join(self.assets_root, 'images')
-        self.spritesheets_path = os.path.join(self.images_path, 'spritesheets')
-        self.sprites_path = os.path.join(self.images_path, 'sprites')
 
     def load_all_assets(self) -> None:
         """Load all game assets and optimize them for performance."""

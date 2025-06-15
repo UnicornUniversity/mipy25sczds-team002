@@ -1,7 +1,20 @@
+import sys
+
 import pygame
 import os
 import random
 from typing import Dict, Optional
+
+
+def get_audio_assets_path():
+    """Získá správnou cestu k audio assetům"""
+    if getattr(sys, 'frozen', False):
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, 'assets', 'sounds')
+        else:
+            return os.path.join(os.path.dirname(sys.executable), 'assets', 'sounds')
+    else:
+        return os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'sounds')
 
 
 class SoundManager:
@@ -9,9 +22,14 @@ class SoundManager:
 
     def __init__(self):
         """Initialize the sound manager"""
-        # Initialize pygame mixer if not already initialized
         if not pygame.mixer.get_init():
             pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+
+        self.sounds_path = get_audio_assets_path()
+        print(f"Audio assets path: {self.sounds_path}")
+
+        if not os.path.exists(self.sounds_path):
+            print(f"WARNING: Audio folder not found at {self.sounds_path}")
 
         # Volume settings
         self.master_volume = 0.7
@@ -35,22 +53,15 @@ class SoundManager:
 
     def _load_all_sounds(self):
         """Load all sounds from assets/sounds directory recursively"""
-        sounds_dir = "../assets/sounds"  # Opravená cesta
-
-        if not os.path.exists(sounds_dir):
-            print(f"Warning: Sounds directory '{sounds_dir}' not found.")
-            return
 
         # Walk through all subdirectories
-        for root, dirs, files in os.walk(sounds_dir):
+        for root, dirs, files in os.walk(self.sounds_path):
             for filename in files:
                 if filename.lower().endswith(('.wav', '.mp3', '.ogg')):
                     file_path = os.path.join(root, filename)
 
-                    # Create sound name from file path relative to sounds_dir
-                    relative_path = os.path.relpath(file_path, sounds_dir)
+                    relative_path = os.path.relpath(file_path, self.sounds_path)
                     sound_name = relative_path.replace(os.sep, '_').replace('.', '_')
-                    # Remove file extension from name
                     sound_name = '_'.join(sound_name.split('_')[:-1])
 
                     try:
@@ -63,12 +74,9 @@ class SoundManager:
 
     def _organize_sound_groups(self):
         """Organize sounds into groups for random/cycling playback"""
-        # Group sounds by base name (e.g., hit_flesh_1, hit_flesh_2 -> hit_flesh group)
         for sound_name in self.sounds.keys():
-            # Check if sound name ends with a number
             parts = sound_name.split('_')
             if len(parts) >= 2 and parts[-1].isdigit():
-                # Remove the number to get base name
                 base_name = '_'.join(parts[:-1])
 
                 if base_name not in self.sound_groups:

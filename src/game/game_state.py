@@ -664,13 +664,13 @@ class GameOverState(GameState):
         return None
 
     def _save_score(self):
-        """Save score to file"""
+        """Save score to file and upload to server"""
         import json
         import os
         from datetime import datetime
 
         try:
-            # Load existing scores
+            # Load existing scores (lokální záloha)
             try:
                 with open("high_scores.json", "r") as f:
                     scores = json.load(f)
@@ -689,13 +689,35 @@ class GameOverState(GameState):
             scores.sort(key=lambda x: x["score"], reverse=True)
             scores = scores[:10]
 
-            # Save to file
+            # Save to file (lokální záloha)
             with open("high_scores.json", "w") as f:
                 json.dump(scores, f, indent=2)
+
+            # Upload to server
+            self._upload_score_to_server(new_score)
 
             print(f"Score saved: {new_score}")
         except Exception as e:
             print(f"Error saving score: {e}")
+
+    def _upload_score_to_server(self, score_data):
+        """Upload score to server"""
+        try:
+            # Zde implementujte jeden z přístupů výše
+            # např. pomocí requests:
+            import requests
+            response = requests.post(
+                "http://srv641041.hstgr.cloud/deadlock/api/scores",
+                json=score_data,
+                timeout=5
+            )
+            if response.status_code == 200:
+                print("Skóre úspěšně odesláno na server!")
+            else:
+                print(f"Chyba při odesílání skóre: {response.status_code}")
+        except Exception as e:
+            print(f"Nepodařilo se odeslat skóre na server: {e}")
+            # Pokud se nepodařilo odeslat, skóre je stále uloženo lokálně
 
     def render(self, screen, fps=0):
         """Render game over screen"""
@@ -728,101 +750,237 @@ class GameOverState(GameState):
         restart_rect = self.restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80))
         screen.blit(self.restart_text, restart_rect)
 
-class HighScoresState(GameState):
-    """High scores display state"""
 
+class HighScoresState(GameState, ABC):
     def __init__(self):
         """Initialize high scores state"""
-        self.font = pygame.font.Font(None, 74)
-        self.title_text = self.font.render("HIGH SCORES", True, WHITE)
-
-        self.subtitle_font = pygame.font.Font(None, 36)
+        # Fonty s různými velikostmi pro lepší hierarchii
+        self.title_font = pygame.font.Font(None, 84)
+        self.subtitle_font = pygame.font.Font(None, 42)
+        self.header_font = pygame.font.Font(None, 32)
         self.score_font = pygame.font.Font(None, 28)
         self.info_font = pygame.font.Font(None, 24)
+        self.version_font = pygame.font.Font(None, 20)
 
-        self.back_text = self.info_font.render("Press ESC to return to menu", True, GRAY)
+        # Barvy pro lepší vizuál
+        self.colors = {
+            'gold': (255, 215, 0),
+            'silver': (192, 192, 192),
+            'bronze': (205, 127, 50),
+            'white': (255, 255, 255),
+            'gray': (128, 128, 128),
+            'light_gray': (200, 200, 200),
+            'dark_gray': (64, 64, 64),
+            'green': (0, 255, 100),
+            'blue': (100, 150, 255),
+            'red': (255, 100, 100)
+        }
 
-        # Load high scores
-        self.high_scores = self._load_high_scores()
-
-        # Music info
+        # Přepínání mezi lokálními a globálními skóre
+        self.show_global = False
+        self.local_scores = self._load_local_scores()
+        self.global_scores = []
+        self.loading_global = False
         self.music_started = True
 
-    def _load_high_scores(self):
-        """Load high scores from file"""
-        import json
-        try:
-            with open("high_scores.json", "r") as f:
-                scores = json.load(f)
-                return scores[:10]  # Top 10 scores
-        except (FileNotFoundError, json.JSONDecodeError):
-            return []  # Return empty list if file doesn't exist or is corrupted
+        # Import verze hry
+        self.game_version = GAME_VERSION
 
     def update(self, dt):
         """Update high scores state"""
-        # Start menu music
-        if not self.music_started:
-            sound_manager.play_music("music_menu")
-            self.music_started = True
+        pass
+
+    def _load_local_scores(self):
+        """Load local scores from file"""
+        try:
+            import json
+            with open('high_scores.json', 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def _load_global_scores(self):
+        """Load global scores from server"""
+        try:
+            from systems.score import ScoreAPI
+            score_api = ScoreAPI("http://srv641041.hstgr.cloud")
+            return score_api.download_scores(limit=15)
+        except Exception as e:
+            print(f"Chyba při stahování globálních skóre: {e}")
+            return []
+
+    def _format_score(self, score):
+        """Formátuje skóre s oddělovači tisíců"""
+        return f"{score:,}".replace(",", " ")
+
+    def _format_date(self, date_str):
+        """Formátuje datum do hezčího formátu"""
+        try:
+            # Zkusí parsovat různé formáty
+            from datetime import datetime
+            if len(date_str) == 16:  # "2025-06-15 21:50"
+                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+                return dt.strftime("%d.%m.%Y %H:%M")
+            return date_str
+        except:
+            return date_str
+
+    def _get_rank_color(self, rank):
+        """Vrátí barvu podle pořadí"""
+        if rank == 1:
+            return self.colors['gold']
+        elif rank == 2:
+            return self.colors['silver']
+        elif rank == 3:
+            return self.colors['bronze']
+        elif rank <= 5:
+            return self.colors['green']
+        elif rank <= 10:
+            return self.colors['blue']
+        else:
+            return self.colors['white']
 
     def handle_event(self, event):
         """Handle high scores events"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 return "menu"
+            elif event.key == pygame.K_g:
+                self.show_global = not self.show_global
+                if self.show_global and not self.global_scores and not self.loading_global:
+                    self.loading_global = True
+                    self.global_scores = self._load_global_scores()
+                    self.loading_global = False
         return None
 
     def render(self, screen, fps=0):
-        """Render high scores"""
-        screen.fill(BLACK)
+        """Render beautiful high scores"""
+        screen.fill((15, 15, 25))  # Tmavě modrý pozadí
 
-        # Title
-        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, 80))
-        screen.blit(self.title_text, title_rect)
+        # === HLAVIČKA ===
+        # Titul s gradientem efektem
+        title_text = "🏆 GLOBAL HIGH SCORES 🏆" if self.show_global else "🏆 LOCAL HIGH SCORES 🏆"
+        title_surface = self.title_font.render(title_text, True, self.colors['gold'])
+        title_rect = title_surface.get_rect(center=(WINDOW_WIDTH // 2, 60))
 
-        # High scores list
-        if self.high_scores:
-            y_offset = 160
-            for i, score_entry in enumerate(self.high_scores):
+        # Stín pro titul
+        title_shadow = self.title_font.render(title_text, True, (50, 50, 50))
+        shadow_rect = title_shadow.get_rect(center=(WINDOW_WIDTH // 2 + 3, 63))
+        screen.blit(title_shadow, shadow_rect)
+        screen.blit(title_surface, title_rect)
+
+        # Verze hry
+        version_text = f"Deadlock v{self.game_version}"
+        version_surface = self.version_font.render(version_text, True, self.colors['gray'])
+        version_rect = version_surface.get_rect(center=(WINDOW_WIDTH // 2, 95))
+        screen.blit(version_surface, version_rect)
+
+        # === HLAVIČKA TABULKY ===
+        header_y = 140
+
+        # Pozadí hlavičky
+        header_rect = pygame.Rect(50, header_y - 5, WINDOW_WIDTH - 100, 35)
+        pygame.draw.rect(screen, (40, 40, 60), header_rect)
+        pygame.draw.rect(screen, self.colors['gold'], header_rect, 2)
+
+        # Hlavičky sloupců
+        rank_surface = self.header_font.render("RANK", True, self.colors['gold'])
+        name_surface = self.header_font.render("PLAYER", True, self.colors['gold'])
+        score_surface = self.header_font.render("SCORE", True, self.colors['gold'])
+        date_surface = self.header_font.render("DATE", True, self.colors['gold'])
+
+        screen.blit(rank_surface, (70, header_y))
+        screen.blit(name_surface, (150, header_y))
+        screen.blit(score_surface, (400, header_y))
+        screen.blit(date_surface, (550, header_y))
+
+        # === SKÓRE ===
+        scores_to_show = self.global_scores if self.show_global else self.local_scores
+        start_y = 190
+
+        if self.show_global and self.loading_global:
+            # Loading animace
+            loading_text = "⏳ Loading global scores..."
+            loading_surface = self.subtitle_font.render(loading_text, True, self.colors['blue'])
+            loading_rect = loading_surface.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+            screen.blit(loading_surface, loading_rect)
+
+        elif scores_to_show:
+            for i, score_entry in enumerate(scores_to_show[:12]):  # Max 12 skóre
                 rank = i + 1
-                name = score_entry.get("name", "Unknown")
-                score = score_entry.get("score", 0)
-                date = score_entry.get("date", "")
+                y_pos = start_y + (i * 35)
 
-                # Rank and name
-                rank_text = f"{rank:2d}. {name[:15]:<15}"  # Limit name length and pad
-                rank_surface = self.score_font.render(rank_text, True, WHITE)
+                # Alternující pozadí řádků
+                if i % 2 == 0:
+                    row_rect = pygame.Rect(50, y_pos - 3, WINDOW_WIDTH - 100, 30)
+                    pygame.draw.rect(screen, (25, 25, 35), row_rect)
 
-                # Score
-                score_text = f"{score:>8,}"  # Right-align score with thousands separator
-                score_surface = self.score_font.render(score_text, True, YELLOW)
+                # Parsování dat
+                if isinstance(score_entry, dict):
+                    name = score_entry.get('name', 'Unknown')[:20]  # Omezit délku
+                    score = score_entry.get('score', 0)
+                    date = score_entry.get('date', 'N/A')
+                else:
+                    name = str(score_entry[0])[:20] if len(score_entry) > 0 else 'Unknown'
+                    score = int(score_entry[1]) if len(score_entry) > 1 else 0
+                    date = str(score_entry[2]) if len(score_entry) > 2 else 'N/A'
 
-                # Date (smaller)
-                date_surface = self.info_font.render(date, True, GRAY)
+                # Barva podle pořadí
+                rank_color = self._get_rank_color(rank)
+                text_color = self.colors['white'] if rank > 3 else rank_color
 
-                # Position elements
-                rank_rect = rank_surface.get_rect(left=WINDOW_WIDTH // 2 - 200, top=y_offset)
-                score_rect = score_surface.get_rect(left=WINDOW_WIDTH // 2 + 20, top=y_offset)
-                date_rect = date_surface.get_rect(left=WINDOW_WIDTH // 2 + 150, top=y_offset + 5)
+                # Pořadí s ikonami
+                if rank == 1:
+                    rank_text = "🥇"
+                elif rank == 2:
+                    rank_text = "🥈"
+                elif rank == 3:
+                    rank_text = "🥉"
+                else:
+                    rank_text = f"{rank}."
 
-                screen.blit(rank_surface, rank_rect)
-                screen.blit(score_surface, score_rect)
-                screen.blit(date_surface, date_rect)
+                # Vykreslení řádku
+                rank_surface = self.score_font.render(rank_text, True, rank_color)
+                name_surface = self.score_font.render(name, True, text_color)
+                score_surface = self.score_font.render(self._format_score(score), True, text_color)
+                date_surface = self.score_font.render(self._format_date(date), True, self.colors['light_gray'])
 
-                y_offset += 35
+                screen.blit(rank_surface, (70, y_pos))
+                screen.blit(name_surface, (150, y_pos))
+                screen.blit(score_surface, (400, y_pos))
+                screen.blit(date_surface, (550, y_pos))
+
+                # Highlight pro TOP 3
+                if rank <= 3:
+                    highlight_rect = pygame.Rect(45, y_pos - 5, WINDOW_WIDTH - 90, 32)
+                    pygame.draw.rect(screen, rank_color, highlight_rect, 2)
+
         else:
-            # No scores yet
-            no_scores_text = self.subtitle_font.render("No high scores yet!", True, GRAY)
-            no_scores_rect = no_scores_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
-            screen.blit(no_scores_text, no_scores_rect)
+            # Žádné skóre
+            no_scores_text = "🌐 No global scores available!" if self.show_global else "🏠 No local scores yet!"
+            no_scores_surface = self.subtitle_font.render(no_scores_text, True, self.colors['gray'])
+            no_scores_rect = no_scores_surface.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+            screen.blit(no_scores_surface, no_scores_rect)
 
-        # Back instruction
-        back_rect = self.back_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT - 40))
-        screen.blit(self.back_text, back_rect)
+        # === SPODNÍ LIŠTA ===
+        footer_y = WINDOW_HEIGHT - 60
 
-        # FPS counter
-        fps_text = self.info_font.render(f"FPS: {int(fps)}", True, WHITE)
-        screen.blit(fps_text, (10, 10))
+        # Pozadí spodní lišty
+        footer_rect = pygame.Rect(0, footer_y - 10, WINDOW_WIDTH, 70)
+        pygame.draw.rect(screen, (20, 20, 30), footer_rect)
+
+        # Instrukce
+        toggle_text = "🌐 Press [G] for Local Scores" if self.show_global else "🏠 Press [G] for Global Scores"
+        back_text = "📱 Press [ESC] to return to menu"
+
+        toggle_surface = self.info_font.render(toggle_text, True, self.colors['green'])
+        back_surface = self.info_font.render(back_text, True, self.colors['blue'])
+
+        toggle_rect = toggle_surface.get_rect(center=(WINDOW_WIDTH // 2, footer_y + 10))
+        back_rect = back_surface.get_rect(center=(WINDOW_WIDTH // 2, footer_y + 35))
+
+        screen.blit(toggle_surface, toggle_rect)
+        screen.blit(back_surface, back_rect)
 
 
 class GameStateManager:
