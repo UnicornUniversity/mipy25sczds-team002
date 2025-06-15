@@ -11,7 +11,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from utils.sprite_loader import load_all_assets, get_texture, get_texture_categories, get_textures_in_category, debug_sprite_info
-from entities.items import Item, HealthPack, Weapon, Powerup
+from systems.items import Item, HealthPack, WeaponPickup as Weapon, Powerup
 
 def test_texture_atlas():
     """Test the texture atlas implementation."""

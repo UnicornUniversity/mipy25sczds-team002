@@ -1,0 +1,316 @@
+"""
+Item Types Module - Base Item Classes and Enums
+==============================================
+
+Contains all basic item type definitions, enums, and base classes.
+"""
+
+import pygame
+import math
+from enum import Enum
+from utils.constants import BLACK, WHITE, GREEN, BLUE, YELLOW, RED, PURPLE
+from utils.sprite_loader import get_texture
+
+
+class ItemType(Enum):
+    """Enum pro typy itemů"""
+    WEAPON = "weapon"
+    HEALTH = "health"
+    AMMO = "ammo"
+    SPEED_BOOST = "speed_boost"
+    DAMAGE_BOOST = "damage_boost"
+    HEALTH_REGEN = "health_regen"
+    INVINCIBILITY = "invincibility"
+    RAPID_FIRE = "rapid_fire"
+
+
+class ItemRarity(Enum):
+    """Enum pro raritu itemů"""
+    COMMON = "common"
+    RARE = "rare"
+    LEGENDARY = "legendary"
+
+
+class Item:
+    """Base class pro všechny item typy"""
+
+    def __init__(self, x, y, item_type=ItemType.HEALTH, rarity=ItemRarity.COMMON):
+        """Initialize item
+
+        Args:
+            x, y (float): Position
+            item_type (ItemType): Type of item
+            rarity (ItemRarity): Item rarity
+        """
+        self.x = x
+        self.y = y
+        self.item_type = item_type
+        self.rarity = rarity
+        self.rect = pygame.Rect(x, y, 32, 32)  # Standard item size
+        self.collected = False
+        self.sprite = None
+        self.color = self._get_rarity_color()
+        self.is_expired = False
+
+        # Animation
+        self.bob_time = 0
+        self.bob_height = 8
+        self.bob_speed = 3
+
+
+    def _get_rarity_color(self):
+        """Get color based on rarity"""
+        color_map = {
+            ItemRarity.COMMON: WHITE,
+            ItemRarity.RARE: BLUE,
+            ItemRarity.LEGENDARY: PURPLE
+        }
+        return color_map.get(self.rarity, WHITE)
+
+    def update(self, dt):
+        """Update item (animation, etc.)"""
+        self.bob_time += dt
+
+    def render(self, screen, camera_offset=(0, 0)):
+        """Render the item"""
+        # Calculate screen position with camera offset
+        screen_x = self.rect.x - camera_offset[0]
+        screen_y = self.rect.y - camera_offset[1]
+
+        # Add bobbing animation
+        bob_offset = math.sin(self.bob_time * self.bob_speed) * self.bob_height
+        render_y = screen_y + bob_offset
+
+        if self.sprite:
+            screen.blit(self.sprite, (screen_x, render_y))
+        else:
+            # Fallback rectangle rendering
+            pygame.draw.rect(screen, self.color, (screen_x, render_y, self.rect.width, self.rect.height))
+
+    def collect(self, player):
+        """Collect the item - to be overridden by subclasses
+
+        Args:
+            player: Player who collected the item
+
+        Returns:
+            bool: True if item was successfully collected
+        """
+        self.collected = True
+        return True
+
+    def is_collected(self):
+        """Check if item has been collected"""
+        return self.collected
+
+class WeaponPickup(Item):
+    """Weapon pickup item"""
+
+    def __init__(self, x, y, weapon_type="pistol"):
+        """Initialize weapon pickup
+
+        Args:
+            x, y (float): Position
+            weapon_type (str): Type of weapon to give
+        """
+        super().__init__(x, y, ItemType.WEAPON, ItemRarity.RARE)
+        self.weapon_type = weapon_type
+        self.color = YELLOW
+        self.is_expired = False
+        self._load_sprite()
+
+    def _load_sprite(self):
+        """Load weapon sprite"""
+        self.sprite = get_texture("weapon", self.weapon_type)
+
+    def collect(self, player):
+        """Give weapon to player"""
+        print("Collected weapon")
+        if not self.collected:
+            from systems.weapons import WeaponFactory
+            weapon = WeaponFactory.create_weapon(self.weapon_type)
+            if weapon and player.add_weapon(weapon):
+                self.collected = True
+                return True
+        return False
+
+
+class HealthPack(Item):
+    """Health restoration item"""
+
+    def __init__(self, x, y, heal_amount=25):
+        """Initialize health pack
+
+        Args:
+            x, y (float): Position
+            heal_amount (int): Amount of health to restore
+        """
+        super().__init__(x, y, ItemType.HEALTH, ItemRarity.COMMON)
+        self.heal_amount = heal_amount
+        self.color = GREEN
+
+    def collect(self, player):
+        """Heal the player"""
+        if not self.collected and player.health < player.max_health:
+            print("Collected health pack!")
+            player.heal(self.heal_amount)
+            self.collected = True
+            return True
+
+        return False
+
+
+class AmmoPack(Item):
+    """Ammunition item"""
+
+    def __init__(self, x, y, ammo_amount=30):
+        """Initialize ammo pack
+
+        Args:
+            x, y (float): Position
+            ammo_amount (int): Amount of ammo to give
+        """
+        super().__init__(x, y, ItemType.AMMO, ItemRarity.COMMON)
+        self.ammo_amount = ammo_amount
+        self.color = BLUE
+
+    def collect(self, player):
+        """Give ammo to player's current weapon"""
+        print("Collected ammo pack!")
+        if not self.collected:
+            current_weapon = player.get_current_weapon()
+            if current_weapon and current_weapon.ammo < current_weapon.magazine_size:
+                current_weapon.ammo = min(current_weapon.magazine_size,
+                                        current_weapon.ammo + self.ammo_amount)
+                self.collected = True
+                return True
+        return False
+
+
+class Powerup(Item):
+    """Base class for all powerups"""
+
+    def __init__(self, x, y, powerup_type, duration=10.0, rarity=ItemRarity.RARE):
+        """Initialize powerup
+
+        Args:
+            x, y (float): Position
+            powerup_type (ItemType): Type of powerup
+            duration (float): Duration in seconds
+            rarity (ItemRarity): Powerup rarity
+        """
+        super().__init__(x, y, powerup_type, rarity)
+        self.duration = duration
+        self.effect_applied = False
+
+    def collect(self, player):
+        """Apply powerup effect to player"""
+        print("Collected powerup!")
+        if not self.collected:
+            self.apply_effect(player)
+            self.collected = True
+            return True
+        return False
+
+    def apply_effect(self, player):
+        """Apply the powerup effect - to be overridden"""
+        pass
+
+
+class SpeedBoost(Powerup):
+    """Speed boost powerup"""
+
+    def __init__(self, x, y, speed_multiplier=1.5, duration=15.0):
+        """Initialize speed boost
+
+        Args:
+            x, y (float): Position
+            speed_multiplier (float): Speed multiplication factor
+            duration (float): Duration in seconds
+        """
+        super().__init__(x, y, ItemType.SPEED_BOOST, duration, ItemRarity.COMMON)
+        self.speed_multiplier = speed_multiplier
+        self.color = YELLOW
+
+    def apply_effect(self, player):
+        """Apply speed boost to player"""
+        # Implementation would depend on player's effect system
+        print(f"Speed boost applied! ({self.speed_multiplier}x for {self.duration}s)")
+
+
+class DamageBoost(Powerup):
+    """Damage boost powerup"""
+
+    def __init__(self, x, y, damage_multiplier=2.0, duration=10.0):
+        """Initialize damage boost
+
+        Args:
+            x, y (float): Position
+            damage_multiplier (float): Damage multiplication factor
+            duration (float): Duration in seconds
+        """
+        super().__init__(x, y, ItemType.DAMAGE_BOOST, duration, ItemRarity.RARE)
+        self.damage_multiplier = damage_multiplier
+        self.color = RED
+
+    def apply_effect(self, player):
+        """Apply damage boost to player"""
+        print(f"Damage boost applied! ({self.damage_multiplier}x for {self.duration}s)")
+
+
+class HealthRegeneration(Powerup):
+    """Health regeneration powerup"""
+
+    def __init__(self, x, y, regen_rate=5, duration=20.0):
+        """Initialize health regeneration
+
+        Args:
+            x, y (float): Position
+            regen_rate (int): Health points regenerated per second
+            duration (float): Duration in seconds
+        """
+        super().__init__(x, y, ItemType.HEALTH_REGEN, duration, ItemRarity.RARE)
+        self.regen_rate = regen_rate
+        self.color = GREEN
+
+    def apply_effect(self, player):
+        """Apply health regeneration to player"""
+        print(f"Health regeneration applied! ({self.regen_rate} HP/s for {self.duration}s)")
+
+
+class Invincibility(Powerup):
+    """Invincibility powerup"""
+
+    def __init__(self, x, y, duration=5.0):
+        """Initialize invincibility
+
+        Args:
+            x, y (float): Position
+            duration (float): Duration in seconds
+        """
+        super().__init__(x, y, ItemType.INVINCIBILITY, duration, ItemRarity.LEGENDARY)
+        self.color = PURPLE
+
+    def apply_effect(self, player):
+        """Apply invincibility to player"""
+        print(f"Invincibility applied! ({self.duration}s)")
+
+
+class RapidFire(Powerup):
+    """Rapid fire powerup"""
+
+    def __init__(self, x, y, fire_rate_multiplier=3.0, duration=8.0):
+        """Initialize rapid fire
+
+        Args:
+            x, y (float): Position
+            fire_rate_multiplier (float): Fire rate multiplication factor
+            duration (float): Duration in seconds
+        """
+        super().__init__(x, y, ItemType.RAPID_FIRE, duration, ItemRarity.RARE)
+        self.fire_rate_multiplier = fire_rate_multiplier
+        self.color = BLUE
+
+    def apply_effect(self, player):
+        """Apply rapid fire to player"""
+        print(f"Rapid fire applied! ({self.fire_rate_multiplier}x for {self.duration}s)")

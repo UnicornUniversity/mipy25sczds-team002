@@ -1,734 +1,573 @@
+"""
+Game State Management System
+===========================
+
+Manages different game states like menu, gameplay, pause, game over.
+Refactored to use proper collision system and animation system.
+"""
+
 import pygame
-import random
 import math
-from entities.player import Player
-from entities.zombies import Zombie, ToughZombie
-from entities.items import Item, HealthPack, Weapon, Powerup
-from game.map_generator import MapGenerator
-from systems.audio import play_menu_music, play_gameplay_music, stop_music, toggle_music, toggle_sfx, set_music_volume, set_sfx_volume
-from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
-from systems.enemy_spawner import EnemySpawner
+import random
+from abc import ABC, abstractmethod
+
 from systems import collisions
-from utils.constants import (
-    WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
-    CAMERA_LERP, BLACK, WHITE, MAP_WIDTH, MAP_HEIGHT,
-    DEBUG_FONT_SIZE, DEBUG_TEXT_COLOR,
-    PLAYER_MAX_HEALTH, PICKUP_NOTIFICATION_DURATION,
-    ZOMBIE_COLLISION_RADIUS
-)
-from utils.sprite_loader import get_asset_info
+from utils.constants import *
+from utils.sprite_loader import get_texture, debug_sprite_info
+from systems.audio import music_manager
+from systems.collisions import check_entity_collision, initialize as collision_init
+from systems.enemy_spawner import EnemySpawner
+from systems.item_spawner import ItemSpawner
+from systems.animation import animation_system  # Import global animation system
+from entities.player import Player
+from game.map_generator import MapGenerator
 
 
-class GameState:
-    """Base class for game states"""
+class GameState(ABC):
+    """Abstract base class for all game states"""
 
-    def handle_event(self, event):
-        """Event processing"""
-        pass
-
+    @abstractmethod
     def update(self, dt):
-        """State update"""
+        """Update state logic"""
         pass
 
+    @abstractmethod
+    def handle_event(self, event):
+        """Handle pygame events"""
+        pass
+
+    @abstractmethod
     def render(self, screen, fps=0):
-        """State rendering"""
+        """Render state"""
         pass
 
 
 class MenuState(GameState):
-    """Main menu"""
+    """Main menu state"""
 
     def __init__(self):
+        """Initialize menu state"""
         self.font = pygame.font.Font(None, 74)
-        self.title_text = self.font.render("DEADLOCK", True, (255, 255, 255))
+        self.title_text = self.font.render("DEADLOCK", True, WHITE)
+
         self.subtitle_font = pygame.font.Font(None, 36)
-        self.subtitle_text = self.subtitle_font.render("Press SPACE to start", True, (200, 200, 200))
+        self.subtitle_text = self.subtitle_font.render("Press SPACE to Start", True, WHITE)
 
-        # Music controls info
         self.info_font = pygame.font.Font(None, 24)
-        self.music_info = [
-            "Music Controls:",
-            "M - Toggle Music",
-            "N - Toggle Sound Effects",
-            "[ - Decrease Music Volume",
-            "] - Increase Music Volume"
-        ]
 
+        # Music info
+        self.music_info = "Loading music..."
         self.music_started = False
 
     def update(self, dt):
-        """Start menu music when first updated"""
+        """Update menu state"""
+        # Start menu music
         if not self.music_started:
-            play_menu_music()
+            music_manager.play_music("menu_music")
             self.music_started = True
 
     def handle_event(self, event):
+        """Handle menu events"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                # Přepnout na gameplay
+                # Stop menu music before switching to gameplay
+                music_manager.stop_music()
                 return "gameplay"
+
             elif event.key == pygame.K_m:
                 # Toggle music
-                toggle_music()
-            elif event.key == pygame.K_n:
-                # Toggle sound effects
-                toggle_sfx()
-            elif event.key == pygame.K_LEFTBRACKET:
-                # Decrease music volume
-                from systems.audio import music_manager
-                current_volume = music_manager.music_volume
-                set_music_volume(max(0.0, current_volume - 0.1))
-            elif event.key == pygame.K_RIGHTBRACKET:
-                # Increase music volume
-                from systems.audio import music_manager
-                current_volume = music_manager.music_volume
-                set_music_volume(min(1.0, current_volume + 0.1))
+                if music_manager.is_playing():
+                    music_manager.stop_music()
+                else:
+                    music_manager.play_music("menu_music")
+
+            elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
+                # Increase volume
+                music_manager.set_volume(min(1.0, music_manager.get_volume() + 0.1))
+
+            elif event.key == pygame.K_MINUS:
+                # Decrease volume
+                music_manager.set_volume(max(0.0, music_manager.get_volume() - 0.1))
+
         return None
 
     def render(self, screen, fps=0):
-        screen_rect = screen.get_rect()
-        title_rect = self.title_text.get_rect(center=(screen_rect.centerx, screen_rect.centery - 100))
-        subtitle_rect = self.subtitle_text.get_rect(center=(screen_rect.centerx, screen_rect.centery - 20))
+        """Render menu"""
+        screen.fill(BLACK)
 
+        # Title
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 100))
         screen.blit(self.title_text, title_rect)
+
+        # Subtitle
+        subtitle_rect = self.subtitle_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         screen.blit(self.subtitle_text, subtitle_rect)
 
-        # Render music controls info
-        y_offset = screen_rect.centery + 50
-        for line in self.music_info:
-            info_text = self.info_font.render(line, True, (150, 150, 150))
-            info_rect = info_text.get_rect(center=(screen_rect.centerx, y_offset))
-            screen.blit(info_text, info_rect)
-            y_offset += 30
-
-        # Show current music status
-        from systems.audio import music_manager
-        status_lines = [
-            f"Music: {'ON' if music_manager.music_enabled else 'OFF'}",
-            f"Music Volume: {int(music_manager.music_volume * 100)}%",
-            f"SFX Volume: {int(music_manager.sfx_volume * 100)}%"
+        # Controls
+        controls = [
+            "Controls:",
+            "WASD/Arrow Keys - Move",
+            "Mouse - Aim",
+            "Left Click - Shoot",
+            "R - Reload",
+            "1-5 - Switch Weapons",
+            "Q/E - Cycle Weapons",
+            "",
+            "M - Toggle Music",
+            "+/- - Volume Control",
         ]
 
-        y_offset += 20
-        for line in status_lines:
-            status_text = self.info_font.render(line, True, (100, 255, 100))
-            status_rect = status_text.get_rect(center=(screen_rect.centerx, y_offset))
-            screen.blit(status_text, status_rect)
+        y_offset = WINDOW_HEIGHT // 2 + 80
+        for line in controls:
+            if line:  # Skip empty lines for spacing
+                text = self.info_font.render(line, True, WHITE)
+                text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, y_offset))
+                screen.blit(text, text_rect)
             y_offset += 25
+
+        # Music info
+        music_text = self.info_font.render(self.music_info, True, YELLOW)
+        music_rect = music_text.get_rect(bottomright=(WINDOW_WIDTH - 10, WINDOW_HEIGHT - 10))
+        screen.blit(music_text, music_rect)
+
+        # FPS counter
+        fps_text = self.info_font.render(f"FPS: {int(fps)}", True, WHITE)
+        screen.blit(fps_text, (10, 10))
 
 
 class GameplayState(GameState):
-    """Main gameplay state"""
-
-    # Class variable to store the current instance
-    instance = None
+    """Main gameplay state with proper collision and animation systems"""
 
     def __init__(self):
-        # Set the instance to self
-        GameplayState.instance = self
+        """Initialize gameplay state"""
+        # Game entities
+        self.player = Player(100, 100)
 
-        # Create the map generator
+        # Game systems
         self.map_generator = MapGenerator()
 
-        # Initialize the collision system
-        collisions.initialize(self.map_generator)
+        # Initialize collision system with map generator
+        collision_init(self.map_generator)
 
-        # Find a walkable tile near the center for the player
-        center_x = (TILE_SIZE * MAP_WIDTH) // 2
-        center_y = (TILE_SIZE * MAP_HEIGHT) // 2
-
-        # Search for a walkable tile in a spiral pattern around the center
-        player_x, player_y = self._find_walkable_position(center_x, center_y)
-        self.player = Player(player_x, player_y)
-
-        # Camera position (top-left corner of the view)
-        self.camera_x = 0
-        self.camera_y = 0
-
-        from systems.item_spawner import ItemSpawner
-        self.item_spawner = ItemSpawner(self.map_generator)
-        self.items = self.item_spawner.get_items()
-        self.item_spawner.initialize_weapon_sequence()
-
-        # Create enemy system
         self.enemy_system = EnemySpawner(self.map_generator)
-
-        # Create a list to store bullets
+        self.item_spawner = ItemSpawner(self.map_generator)
         self.bullets = []
 
-        # Pickup notification
-        self.pickup_message = ""
-        self.pickup_timer = 0
+        self.camera_y = 0
 
-        # Mouse button state tracking
-        self.left_mouse_down = False
+        # Game state
+        self.paused = False
+        self.score = 0
 
-        # Debug mode (toggled with F1)
-        self.debug_mode = False
-        self.debug_font = pygame.font.Font(None, DEBUG_FONT_SIZE)
+        # Debug flags
+        self.show_debug = False
 
-        # Visual effects
-        self.effects = []
+        # Music
+        self.music_started = False
 
-        # Music state
-        self.gameplay_music_started = False
+    def update(self, dt):
+        """Update gameplay state"""
+        if self.paused:
+            return
 
-    def _find_walkable_position(self, center_x, center_y):
-        """Find a walkable position near the specified center coordinates"""
-        # Start at the center
-        x, y = center_x, center_y
+        # Start gameplay music
+        if not self.music_started:
+            music_manager.play_music("gameplay_music")
+            self.music_started = True
 
-        # If the center is walkable, return it
-        if self.map_generator.is_walkable(x, y):
-            return x, y
+        self.player.update(dt, self.map_generator)
+        self.enemy_system.update(dt, self.player.x, self.player.y)
+        self.item_spawner.update(dt)
 
-        # Search in a spiral pattern
-        for radius in range(1, 100):  # Limit search radius to avoid infinite loop
-            # Check positions in a square around the center
-            for dx in range(-radius, radius + 1):
-                for dy in range(-radius, radius + 1):
-                    # Skip positions that aren't on the edge of the square
-                    if abs(dx) != radius and abs(dy) != radius:
-                        continue
+        self._handle_bullet_update(dt)
 
-                    # Calculate position
-                    pos_x = center_x + dx * TILE_SIZE
-                    pos_y = center_y + dy * TILE_SIZE
+        animation_system.update(dt)
 
-                    # Check if position is walkable
-                    if self.map_generator.is_walkable(pos_x, pos_y):
-                        return pos_x, pos_y
-
-        # If no walkable position found, return the center anyway
-        return center_x, center_y
-
-    def _spawn_zombie(self):
-        """Spawn a zombie at a random position away from the player on a walkable tile"""
-        # Choose a random position at least 200 pixels away from the player
-        while True:
-            x = random.randint(0, TILE_SIZE * MAP_WIDTH)
-            y = random.randint(0, TILE_SIZE * MAP_HEIGHT)
-
-            # Calculate distance to player
-            dx = x - self.player.x
-            dy = y - self.player.y
-            distance = (dx * dx + dy * dy) ** 0.5
-
-            # If far enough away and on a walkable tile, create the zombie
-            if distance > 200 and self.map_generator.is_walkable(x, y):
-                # 20% chance to spawn a tough zombie
-                if random.random() < 0.2:
-                    self.zombies.append(ToughZombie(x, y))
-                else:
-                    self.zombies.append(Zombie(x, y))
-                break
-
-    # Weapon spawning is now handled by the drop_system
+        self._update_camera()
+        self._check_collisions()
 
     def handle_event(self, event):
+        """Handle gameplay events"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                return "menu"
-            elif event.key == pygame.K_F1:
-                # Toggle debug mode
-                self.debug_mode = not self.debug_mode
+                return "pause"
             elif event.key == pygame.K_r:
-                # Reload weapon
-                current_weapon = self.player.get_current_weapon()
-                if current_weapon:
-                    current_weapon.reload()
-            # Handle weapon switching with number keys 1-5
+                self.player.reload()
+            elif event.key == pygame.K_q:
+                self.player.cycle_weapons_backward()
+            elif event.key == pygame.K_e:
+                self.player.cycle_weapons_forward()
             elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
                 slot = event.key - pygame.K_1
                 self.player.switch_weapon(slot)
-            elif event.key == pygame.K_m:
-                toggle_music()
-            elif event.key == pygame.K_n:
-                toggle_sfx()
-            elif event.key == pygame.K_LEFTBRACKET:
-                from systems.audio import music_manager
-                current_volume = music_manager.music_volume
-                set_music_volume(max(0.0, current_volume - 0.1))
-            elif event.key == pygame.K_RIGHTBRACKET:
-                from systems.audio import music_manager
-                current_volume = music_manager.music_volume
-                set_music_volume(min(1.0, current_volume + 0.1))
-        elif event.type == pygame.MOUSEMOTION:
-            mouse_pos = pygame.mouse.get_pos()
-            camera_offset = (int(self.camera_x), int(self.camera_y))
-            self.player.update_aim(mouse_pos, camera_offset)
+            elif event.key == pygame.K_F3:
+                self.show_debug = not self.show_debug
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                self.left_mouse_down = True
+            if event.button == 1:  # Left click
+                self._handle_player_shoot()
 
-                result = self.player.shoot()
-                if result:
-                    # Handle different return types from different weapons
-                    if isinstance(result, list):
-                        # Shotgun returns a list of pellets
-                        self.bullets.extend(result)
-                    else:
-                        # Other weapons return a single bullet
-                        self.bullets.append(result)
+        elif event.type == pygame.MOUSEMOTION:
+            # Update player aim
+            camera_offset = (self.camera_x, self.camera_y)
+            self.player.update_aim(event.pos, camera_offset)
 
-                    # Add muzzle flash effect
-                    self._add_muzzle_flash_effect()
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:  # Left mouse button
-                # Clear flag when button is released
-                self.left_mouse_down = False
         return None
 
-    def update(self, dt):
-        # Start gameplay music when first updated
-        if not self.gameplay_music_started:
-            play_gameplay_music()
-            self.gameplay_music_started = True
-
-        # Update player with map_generator reference
-        self.player.update(dt, self.map_generator)
-
-        # Handle continuous firing for assault rifle
-        current_weapon = self.player.get_current_weapon()
-        if (
-            self.left_mouse_down and
-            current_weapon and
-            hasattr(current_weapon, 'name') and
-            current_weapon.name == "Assault Rifle"
-        ):
-            result = self.player.shoot()
-            if result:
-                # Handle different return types from different weapons
-                if isinstance(result, list):
-                    # Shotgun returns a list of pellets
-                    self.bullets.extend(result)
-                else:
-                    # Other weapons return a single bullet
-                    self.bullets.append(result)
-
-                # Add muzzle flash effect
-                self._add_muzzle_flash_effect()
-
-        # Update enemy system
-        self.enemy_system.update(dt, self.player.x, self.player.y)
-
-        # Update zombies with map_generator reference
-        for i, zombie in enumerate(self.enemy_system.get_zombies()):
-            zombie.update(dt, self.player.x, self.player.y, self.map_generator)
-
-            # Check for zombie-zombie collisions using the collision system
-            new_x, new_y = collisions.check_zombie_collisions(zombie, self.enemy_system.get_zombies())
-            zombie.x, zombie.y = new_x, new_y
-
-            # Check for collision with player
-            if self._check_collision(zombie, self.player):
-                # Zombie attacks player
-                zombie.attack(self.player)
-
-                # Check if player is dead
-                if self.player.is_dead():
-                    # Handle game over
-                    self._handle_game_over()
-                    return  # Stop updating the game state
-
-        # Update bullets and check for collisions
-        bullets_to_remove = []
-        for i, bullet in enumerate(self.bullets):
-            # Update bullet position
-            bullet.update(dt, self.map_generator)
-
-            # Check if bullet has expired
-            if bullet.is_expired():
-                # Handle explosion for explosive bullets (like bazooka rockets)
-                if hasattr(bullet, 'is_explosive') and bullet.is_explosive:
-                    explosion_info = bullet.explode()
-                    if isinstance(explosion_info, dict):
-                        # Extract explosion information
-                        explosion_pos = explosion_info.get('position', (bullet.x, bullet.y))
-                        explosion_radius = explosion_info.get('radius', 0)
-                        explosion_damage = explosion_info.get('damage', 0)
-
-                        # Add explosion effect
-                        self._add_explosion_effect(explosion_pos[0], explosion_pos[1], explosion_radius)
-
-                        # Apply damage to zombies within explosion radius
-                        for zombie in self.enemy_system.get_zombies():
-                            # Calculate distance from explosion to zombie
-                            dx = zombie.x + zombie.width/2 - explosion_pos[0]
-                            dy = zombie.y + zombie.height/2 - explosion_pos[1]
-                            distance = math.sqrt(dx * dx + dy * dy)
-
-                            # If zombie is within explosion radius, apply damage
-                            if distance <= explosion_radius:
-                                # Calculate damage falloff based on distance (full damage at center, less at edges)
-                                damage_multiplier = 1.0 - (distance / explosion_radius)
-                                damage = int(explosion_damage * damage_multiplier)
-
-                                # Apply damage to zombie
-                                zombie_died = zombie.take_damage(damage)
-
-                                # Add blood splatter effect
-                                self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
-
-                                # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
-                                if zombie_died:
-                                    self.enemy_system.remove_zombie(zombie)
-                                    self.item_spawner.spawn_zombie_drop((zombie.x, zombie.y))
-
-                else:
-                    # Add bullet impact effect for non-explosive bullets
-                    self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
-
-                bullets_to_remove.append(i)
-                continue
-
-            # Check for collision with zombies
-            for j, zombie in enumerate(self.enemy_system.get_zombies()):
-                if self._check_collision(bullet, zombie):
-                    # Check if bullet is explosive (like bazooka rocket)
-                    if hasattr(bullet, 'is_explosive') and bullet.is_explosive:
-                        # Explosive bullet hit zombie - trigger explosion
-                        explosion_info = bullet.explode()
-                        if isinstance(explosion_info, dict):
-                            # Extract explosion information
-                            explosion_pos = explosion_info.get('position', (bullet.x, bullet.y))
-                            explosion_radius = explosion_info.get('radius', 0)
-                            explosion_damage = explosion_info.get('damage', 0)
-
-                            # Add explosion effect
-                            self._add_explosion_effect(explosion_pos[0], explosion_pos[1], explosion_radius)
-
-                            # Apply damage to zombies within explosion radius
-                            for explosion_zombie in self.enemy_system.get_zombies():
-                                # Calculate distance from explosion to zombie
-                                dx = explosion_zombie.x + explosion_zombie.width/2 - explosion_pos[0]
-                                dy = explosion_zombie.y + explosion_zombie.height/2 - explosion_pos[1]
-                                distance = math.sqrt(dx * dx + dy * dy)
-
-                                # If zombie is within explosion radius, apply damage
-                                if distance <= explosion_radius:
-                                    # Calculate damage falloff based on distance (full damage at center, less at edges)
-                                    damage_multiplier = 1.0 - (distance / explosion_radius)
-                                    damage = int(explosion_damage * damage_multiplier)
-
-                                    # Apply damage to zombie
-                                    zombie_died = explosion_zombie.take_damage(damage)
-
-                                    # Add blood splatter effect
-                                    self._add_blood_splatter_effect(explosion_zombie.x + explosion_zombie.width // 2, explosion_zombie.y + explosion_zombie.height // 2)
-
-                                    # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
-                                    if zombie_died:
-                                        self.enemy_system.remove_zombie(explosion_zombie)
-
-                                        # Small chance (10%) for zombie to drop a health pack or powerup when it dies
-                                        if random.random() < 0.1:  # 10% chance
-                                            # Create a health pack or powerup at the zombie's position
-                                            if random.random() < 0.8:  # 80% chance for health pack
-                                                item = HealthPack(explosion_zombie.x, explosion_zombie.y)
-                                            else:  # 20% chance for powerup
-                                                item = Powerup(explosion_zombie.x, explosion_zombie.y)
-                                            self.items.append(item)
-                    else:
-                        # Regular bullet hit zombie
-                        zombie_died = zombie.take_damage(bullet.damage)
-
-                        # Add blood splatter effect
-                        self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
-
-                        # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
-                        if zombie_died:
-                            self.enemy_system.remove_zombie(zombie)
-
-                            # Small chance (10%) for zombie to drop a health pack or powerup when it dies
-                            if random.random() < 0.1:  # 10% chance
-                                # Create a health pack or powerup at the zombie's position
-                                if random.random() < 0.8:  # 80% chance for health pack
-                                    item = HealthPack(zombie.x, zombie.y)
-                                else:  # 20% chance for powerup
-                                    item = Powerup(zombie.x, zombie.y)
-                                self.items.append(item)
-
-                    # Mark bullet for removal
-                    bullets_to_remove.append(i)
-                    break
-
-            # Check for collision with map (walls)
-            if not bullets_to_remove or i not in bullets_to_remove:
-                if self.map_generator and not self.map_generator.is_walkable(bullet.x, bullet.y):
-                    # Add bullet impact effect
-                    self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
-
-                    # Mark bullet for removal
-                    bullets_to_remove.append(i)
-
-        # Remove expired or collided bullets
-        self.bullets = [b for i, b in enumerate(self.bullets) if i not in bullets_to_remove]
-
-        # Check for item pickups
-        for item in self.items:
-            if not item.picked_up and self._check_collision(item, self.player):
-                message = item.pickup(self.player)
-                self.pickup_message = message
-                self.pickup_timer = PICKUP_NOTIFICATION_DURATION
-
-                if isinstance(item, Weapon):
-                    self.item_spawner.weapon_picked_up(item.weapon_type)
-
-        # Update pickup notification timer
-        if self.pickup_timer > 0:
-            self.pickup_timer -= dt
-
-        # Update effects
-        effects_to_remove = []
-        for i, effect in enumerate(self.effects):
-            # update() returns True if effect should continue, False if finished
-            should_continue = effect.update(dt)
-            if not should_continue:
-                effects_to_remove.append(i)
-
-        # Remove finished effects
-        self.effects = [e for i, e in enumerate(self.effects) if i not in effects_to_remove]
-
-        self.item_spawner.update(dt)
-        self.items = self.item_spawner.get_items()
-
-        # Update camera position to follow player (with smoothing)
-        target_camera_x = self.player.x - WINDOW_WIDTH // 2
-        target_camera_y = self.player.y - WINDOW_HEIGHT // 2
-
-        # Apply camera smoothing
-        self.camera_x += (target_camera_x - self.camera_x) * CAMERA_LERP
-        self.camera_y += (target_camera_y - self.camera_y) * CAMERA_LERP
-
-        # Calculate map boundaries in pixels
-        map_width_px = MAP_WIDTH * TILE_SIZE
-        map_height_px = MAP_HEIGHT * TILE_SIZE
-
-        # Constrain camera to map boundaries
-        # Left boundary
-        if self.camera_x < 0:
-            self.camera_x = 0
-        # Right boundary (map width - screen width)
-        elif self.camera_x > map_width_px - WINDOW_WIDTH:
-            self.camera_x = map_width_px - WINDOW_WIDTH
-
-        # Top boundary
-        if self.camera_y < 0:
-            self.camera_y = 0
-        # Bottom boundary (map height - screen height)
-        elif self.camera_y > map_height_px - WINDOW_HEIGHT:
-            self.camera_y = map_height_px - WINDOW_HEIGHT
-
     def render(self, screen, fps=0):
-        # Calculate camera offset for rendering
-        camera_offset = (int(self.camera_x), int(self.camera_y))
+        """Render gameplay"""
+        screen.fill(BLACK)
 
-        # Draw the map with camera offset
+        # Calculate camera offset
+        camera_offset = (self.camera_x, self.camera_y)
         self.map_generator.render(screen, camera_offset)
+        self.item_spawner.render(screen, camera_offset)
+        self.player.render(screen, camera_offset)
+        self.enemy_system.render(screen, camera_offset)
 
-        # Draw items with camera offset
-        for item in self.items:
-            item.render(screen, camera_offset)
-
-        # Draw bullets with camera offset
         for bullet in self.bullets:
             bullet.render(screen, camera_offset)
 
-        # Draw zombies with camera offset
-        for zombie in self.enemy_system.get_zombies():
-            zombie.render(screen, camera_offset)
+        animation_system.render(screen, camera_offset)
 
-        # Draw player with camera offset
-        self.player.render(screen, camera_offset)
+        self._render_ui(screen, fps)
+        if self.show_debug:
+            self._render_debug_info(screen, fps, camera_offset)
 
-        # Draw effects with camera offset
-        for effect in self.effects:
-            effect.render(screen, camera_offset)
+    def _update_camera(self):
+        """Update camera to follow player"""
+        # Center camera on player
+        self.camera_x = self.player.x - WINDOW_WIDTH // 2
+        self.camera_y = self.player.y - WINDOW_HEIGHT // 2
 
-        # Draw pickup notification if active
-        if self.pickup_timer > 0:
-            # Create a font for the notification
-            notification_font = pygame.font.Font(None, 36)
+        # Clamp camera to map bounds
+        map_width = MAP_WIDTH * TILE_SIZE
+        map_height = MAP_HEIGHT * TILE_SIZE
 
-            # Render the notification text
-            notification_text = notification_font.render(self.pickup_message, True, WHITE)
+        self.camera_x = max(0, min(self.camera_x, map_width - WINDOW_WIDTH))
+        self.camera_y = max(0, min(self.camera_y, map_height - WINDOW_HEIGHT))
 
-            # Position the notification at the top center of the screen
-            text_rect = notification_text.get_rect(center=(WINDOW_WIDTH // 2, 50))
+    def _handle_bullet_update(self, dt):
+        for bullet in self.bullets[:]:  # Create copy to avoid modification during iteration
+            bullet.update(dt, self.map_generator)
 
-            # Draw the notification
-            screen.blit(notification_text, text_rect)
+            # Check collision with zombies
+            hit_zombie = None
+            for zombie in self.enemy_system.zombies[:]:
+                if collisions.check_entity_collision(bullet, zombie):
+                    # Add blood effect when zombie is hit - USE ANIMATION SYSTEM
+                    blood_x = zombie.x + zombie.width / 2
+                    blood_y = zombie.y + zombie.height / 2
+                    animation_system.add_effect('blood_splatter', blood_x, blood_y, 0.8)
 
-        # Render debug information if debug mode is enabled
-        if self.debug_mode:
-            self._render_debug_info(screen, fps)
+                    if zombie.take_damage(bullet.damage):
+                        self.enemy_system.zombies.remove(zombie)
+                        self.score += 10
+                    hit_zombie = zombie
+                    break
 
-    def _check_collision(self, entity1, entity2):
-        """Check if two entities are colliding
+            # Remove bullet if it hit something or expired
+            if hit_zombie or bullet.is_expired():
+                if bullet in self.bullets:
+                    self.bullets.remove(bullet)
 
-        Args:
-            entity1: First entity
-            entity2: Second entity
+                # Handle explosive bullets
+                if bullet.is_explosive and hit_zombie:
+                    explosion_data = bullet.explode()
+                    if explosion_data:
+                        self._handle_explosion(explosion_data)
 
-        Returns:
-            bool: True if entities are colliding, False otherwise
-        """
-        # Use the centralized collision system
-        return collisions.check_entity_collision(entity1, entity2)
+    def _handle_player_shoot(self):
+        """Handle player shooting"""
+        if pygame.mouse.get_pressed()[0]:  # Left mouse button
+            projectiles = self.player.shoot()
+            if projectiles:
+                # Add muzzle flash animation
+                self._add_muzzle_flash_animation()
 
-    def _add_muzzle_flash_effect(self):
-        """Add a muzzle flash effect at the player's weapon position"""
+                if isinstance(projectiles, list):
+                    # Multiple projectiles (shotgun)
+                    self.bullets.extend(projectiles)
+                else:
+                    # Single projectile
+                    self.bullets.append(projectiles)
+
+    def _add_muzzle_flash_animation(self):
+        """Add muzzle flash animation at weapon position"""
         current_weapon = self.player.get_current_weapon()
-        if not current_weapon:
-            return
+        if current_weapon:
+            # Get weapon muzzle position from weapon system
+            player_center_x = self.player.x + self.player.width / 2
+            player_center_y = self.player.y + self.player.height / 2
+            muzzle_x, muzzle_y = current_weapon.get_muzzle_position(player_center_x, player_center_y,
+                                                                    self.player.aim_angle)
+        else:
+            # Fallback to old calculation if no weapon
+            muzzle_offset = 30
+            player_center_x = self.player.x + self.player.width / 2
+            player_center_y = self.player.y + self.player.height / 2
+            muzzle_x = player_center_x + muzzle_offset * math.cos(self.player.aim_angle)
+            muzzle_y = player_center_y + muzzle_offset * math.sin(self.player.aim_angle)
 
-        # Calculate muzzle position (slightly in front of player in aim direction)
-        spawn_distance = self.player.width // 2 + 5  # 5 pixels in front of player edge
-        muzzle_x = self.player.x + self.player.width // 2 + math.cos(self.player.aim_angle) * spawn_distance
-        muzzle_y = self.player.y + self.player.height // 2 + math.sin(self.player.aim_angle) * spawn_distance
+        # Add muzzle flash effect
+        animation_system.add_effect('muzzle_flash', muzzle_x, muzzle_y, 0.1)
 
-        # Create muzzle flash effect
-        flash = MuzzleFlash(muzzle_x, muzzle_y)
-        self.effects.append(flash)
+    def _simulate_projectile_hit(self, projectile):
+        """Simulate projectile hit for demonstration"""
+        # This is a simplified version - in full game, projectiles would travel
+        hit_x = self.player.x + 100 * math.cos(self.player.aim_angle)
+        hit_y = self.player.y + 100 * math.sin(self.player.aim_angle)
 
-    def _add_bullet_impact_effect(self, x, y, color=None):
-        """Add a bullet impact effect at the specified position
+        # Check if we hit any zombies
+        zombies = self.enemy_system.get_zombies()
+        for zombie in zombies:
+            distance = math.sqrt((zombie.x - hit_x) ** 2 + (zombie.y - hit_y) ** 2)
+            if distance < 50:  # Hit radius
+                # Add blood splatter animation
+                animation_system.add_effect('blood_splatter', zombie.x, zombie.y, 1.0)
 
-        Args:
-            x (float): X position
-            y (float): Y position
-            color (tuple, optional): Color of the impact
-        """
-        # Use bullet color if provided, otherwise use white
-        impact_color = color or (255, 255, 255)
+                # Damage zombie
+                if zombie.take_damage(projectile.damage):
+                    self.enemy_system.remove_zombie(zombie)
+                    self.score += 10
+                break
+        else:
+            # No zombie hit, add bullet impact
+            animation_system.add_effect('bullet_impact', hit_x, hit_y, 0.3)
 
-        # Create bullet impact effect
-        impact = BulletImpact(x, y, impact_color)
-        self.effects.append(impact)
+    def _check_collisions(self):
+        """Check collisions between game entities using proper collision system"""
+        zombies = self.enemy_system.get_zombies()
 
-    def _add_blood_splatter_effect(self, x, y):
-        """Add a blood splatter effect at the specified position
+        # Check zombie-player collisions using entity collision detection
+        for zombie in zombies:
+            if check_entity_collision(self.player, zombie):
+                if zombie.attack(self.player):
+                    # Add blood splatter when player is hit
+                    animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
 
-        Args:
-            x (float): X position
-            y (float): Y position
-        """
-        # Create blood splatter effect
-        splatter = BloodSplatter(x, y)
-        self.effects.append(splatter)
+                    if self.player.is_dead():
+                        return "game_over"
 
-    def _add_explosion_effect(self, x, y, radius):
-        """Add an explosion effect at the specified position
+        picked_items = self.item_spawner.check_pickups(self.player)
+        for item in picked_items:
+            animation_system.add_effect('explosion', item.x, item.y, 0.5, size=0.5)
 
-        Args:
-            x (float): X position
-            y (float): Y position
-            radius (float): Explosion radius
-        """
-        # Create a custom explosion effect class
-        class ExplosionEffect:
-            def __init__(self, x, y, radius):
-                self.x = x
-                self.y = y
-                self.radius = radius
-                self.lifetime = 0.5  # Duration of explosion effect in seconds
-                self.age = 0
+    def _render_ui(self, screen, fps):
+        """Render game UI"""
+        # Health bar
+        health_width = 200
+        health_height = 20
+        health_x = 10
+        health_y = 10
 
-            def update(self, dt):
-                self.age += dt
-                return self.age < self.lifetime
+        # Background
+        pygame.draw.rect(screen, RED, (health_x, health_y, health_width, health_height))
 
-            def render(self, screen, camera_offset):
-                if self.age < self.lifetime:
-                    # Calculate screen position
-                    screen_x = int(self.x - camera_offset[0])
-                    screen_y = int(self.y - camera_offset[1])
+        # Health fill
+        health_percent = self.player.health / self.player.max_health
+        fill_width = int(health_width * health_percent)
+        pygame.draw.rect(screen, GREEN, (health_x, health_y, fill_width, health_height))
 
-                    # Calculate current radius based on age (starts big, gets smaller)
-                    current_radius = int(self.radius * (1 - self.age / self.lifetime))
+        # Health text
+        font = pygame.font.Font(None, 24)
+        health_text = font.render(f"Health: {self.player.health}/{self.player.max_health}", True, WHITE)
+        screen.blit(health_text, (health_x, health_y + 25))
 
-                    # Calculate alpha (starts opaque, becomes transparent)
-                    alpha = int(200 * (1 - self.age / self.lifetime))
+        # Weapon info
+        weapon_info = self.player.get_weapon_info()
+        if weapon_info:
+            weapon_text = font.render(f"{weapon_info['name']}: {weapon_info['ammo']}/{weapon_info['magazine_size']}",
+                                      True, WHITE)
+            screen.blit(weapon_text, (health_x, health_y + 50))
 
-                    # Create a surface for the explosion
-                    explosion_surface = pygame.Surface((current_radius * 2, current_radius * 2), pygame.SRCALPHA)
+            if weapon_info['is_reloading']:
+                reload_text = font.render(f"Reloading... {int(weapon_info['reload_progress'] * 100)}%", True, YELLOW)
+                screen.blit(reload_text, (health_x, health_y + 75))
 
-                    # Draw multiple circles with different colors for the explosion effect
-                    pygame.draw.circle(explosion_surface, (255, 165, 0, alpha), (current_radius, current_radius), current_radius)  # Orange
-                    pygame.draw.circle(explosion_surface, (255, 0, 0, alpha), (current_radius, current_radius), int(current_radius * 0.7))  # Red
-                    pygame.draw.circle(explosion_surface, (255, 255, 0, alpha), (current_radius, current_radius), int(current_radius * 0.4))  # Yellow
+        # Score
+        score_text = font.render(f"Score: {self.score}", True, WHITE)
+        screen.blit(score_text, (WINDOW_WIDTH - 150, 10))
 
-                    # Draw the explosion
-                    screen.blit(explosion_surface, (screen_x - current_radius, screen_y - current_radius))
+        # FPS
+        fps_text = font.render(f"FPS: {int(fps)}", True, WHITE)
+        screen.blit(fps_text, (WINDOW_WIDTH - 150, 35))
 
-        # Create and add the explosion effect
-        explosion = ExplosionEffect(x, y, radius)
-        self.effects.append(explosion)
-
-    def _render_debug_info(self, screen, fps):
-        """Render debug information on the screen"""
-        # Get music status for debug info
-        from systems.audio import music_manager
-        music_status = music_manager.get_status()
-
-        # Create debug text lines
-        debug_lines = [
-            f"FPS: {fps:.1f}",
-            f"Player Health: {self.player.health}/{PLAYER_MAX_HEALTH}",
-            f"Player Position: ({self.player.x:.1f}, {self.player.y:.1f})",
-            f"Tile Position: ({int(self.player.x // TILE_SIZE)}, {int(self.player.y // TILE_SIZE)})",
-            f"On Object: {self.player.is_on_object}",
-            f"Speed Multiplier: {self.player.debug_speed_multiplier:.1f}",
-            f"Active Zombies: {len(self.enemy_system.get_zombies())}",
-            f"Game Time: {self.enemy_system.game_time:.1f}s",
-            f"Spawn Rate: {self.enemy_system.current_spawn_rate:.1f}s",
-            f"Items: {len(self.items)}",
-            f"Bullets: {len(self.bullets)}",
-            f"Effects: {len(self.effects)}",
-            f"Current Weapon Slot: {self.player.current_weapon_slot + 1}",
-            f"Current Weapon: {self.player.get_current_weapon().name if self.player.get_current_weapon() else 'None'}",
-            f"Ammo: {self.player.get_current_weapon().ammo}/{self.player.get_current_weapon().magazine_size if self.player.get_current_weapon() else 0}",
-            f"Reloading: {self.player.get_current_weapon().is_reloading if self.player.get_current_weapon() else False}",
-            f"Weapon Inventory: {', '.join([w.name if w else 'Empty' for w in self.player.weapons])}",
-            f"Pickup Message: {self.pickup_message if self.pickup_timer > 0 else 'None'}",
-            f"Music: {music_status['current_track'] or 'None'} ({music_status['current_category'] or 'None'})",
-            f"Music Volume: {int(music_status['music_volume'] * 100)}%",
-            f"Music Enabled: {music_status['music_enabled']}"
+    def _render_debug_info(self, screen, fps, camera_offset):
+        """Render debug information"""
+        font = pygame.font.Font(None, 20)
+        debug_info = [
+            f"Player: ({int(self.player.x)}, {int(self.player.y)})",
+            f"Camera: ({int(camera_offset[0])}, {int(camera_offset[1])})",
+            f"Zombies: {len(self.enemy_system.get_zombies())}",
+            f"Active Animations: {len(animation_system.effects)}",
+            f"Aim Angle: {math.degrees(self.player.aim_angle):.1f}°"
         ]
 
-        # Render each line of debug text
-        y_offset = 10
-        for line in debug_lines:
-            debug_text = self.debug_font.render(line, True, DEBUG_TEXT_COLOR)
-            screen.blit(debug_text, (10, y_offset))
-            y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
+        y_offset = WINDOW_HEIGHT - len(debug_info) * 25 - 10
+        for info in debug_info:
+            text = font.render(info, True, YELLOW)
+            screen.blit(text, (10, y_offset))
+            y_offset += 25
 
-    # Weapon spawning is now handled by the drop_system
+    def _handle_explosion(self, explosion_data):
+        """Handle explosive damage with visual effects"""
+        explosion_x, explosion_y = explosion_data['position']
+        explosion_radius = explosion_data['radius']
+        explosion_damage = explosion_data['damage']
 
-    def _handle_game_over(self):
-        """Handle game over state"""
-        # Clear all zombies and bullets
-        print("Gme Over vole")
+        # Add explosion visual effect
+        animation_system.add_effect('explosion', explosion_x, explosion_y, 0.6, radius=explosion_radius)
+
+        # Damage all zombies in explosion radius
+        import math
+        for zombie in self.enemy_system.zombies[:]:
+            zombie_center_x = zombie.x + zombie.width / 2
+            zombie_center_y = zombie.y + zombie.height / 2
+
+            distance = math.sqrt((zombie_center_x - explosion_x) ** 2 + (zombie_center_y - explosion_y) ** 2)
+
+            if distance <= explosion_radius:
+                # Add blood effect for each hit zombie
+                animation_system.add_effect('blood_splatter', zombie_center_x, zombie_center_y, 0.8)
+
+                # Damage decreases with distance
+                damage_multiplier = 1.0 - (distance / explosion_radius)
+                actual_damage = int(explosion_damage * damage_multiplier)
+
+                if zombie.take_damage(actual_damage):
+                    self.enemy_system.zombies.remove(zombie)
+                    self.score += 15  # Bonus for explosive kills
+
+
+class PauseState(GameState):
+    """Pause menu state"""
+
+    def __init__(self):
+        """Initialize pause state"""
+        self.font = pygame.font.Font(None, 74)
+        self.title_text = self.font.render("PAUSED", True, WHITE)
+
+        self.subtitle_font = pygame.font.Font(None, 36)
+        self.subtitle_text = self.subtitle_font.render("Press ESC to Continue", True, WHITE)
+
+    def update(self, dt):
+        """Update pause state"""
+        pass
+
+    def handle_event(self, event):
+        """Handle pause events"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return "gameplay"
+            elif event.key == pygame.K_m:
+                return "menu"
+        return None
+
+    def render(self, screen, fps=0):
+        """Render pause menu"""
+        # Semi-transparent overlay
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill(BLACK)
+        screen.blit(overlay, (0, 0))
+
+        # Title
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
+        screen.blit(self.title_text, title_rect)
+
+        # Subtitle
+        subtitle_rect = self.subtitle_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))
+        screen.blit(self.subtitle_text, subtitle_rect)
+
+
+class GameOverState(GameState):
+    """Game over state"""
+
+    def __init__(self, score=0):
+        """Initialize game over state"""
+        self.score = score
+        self.font = pygame.font.Font(None, 74)
+        self.title_text = self.font.render("GAME OVER", True, RED)
+
+        self.subtitle_font = pygame.font.Font(None, 36)
+        self.score_text = self.subtitle_font.render(f"Score: {score}", True, WHITE)
+        self.restart_text = self.subtitle_font.render("Press SPACE to Restart", True, WHITE)
+
+    def update(self, dt):
+        """Update game over state"""
+        pass
+
+    def handle_event(self, event):
+        """Handle game over events"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                return "gameplay"
+            elif event.key == pygame.K_ESCAPE:
+                return "menu"
+        return None
+
+    def render(self, screen, fps=0):
+        """Render game over screen"""
+        screen.fill(BLACK)
+
+        # Title
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 100))
+        screen.blit(self.title_text, title_rect)
+
+        # Score
+        score_rect = self.score_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+        screen.blit(self.score_text, score_rect)
+
+        # Restart instruction
+        restart_rect = self.restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50))
+        screen.blit(self.restart_text, restart_rect)
 
 
 class GameStateManager:
-    """Game state manager"""
+    """Manager for handling game state transitions"""
 
     def __init__(self):
+        """Initialize game state manager"""
         self.states = {
             "menu": MenuState(),
-            "gameplay": GameplayState()
+            "gameplay": None,  # Will be created when needed
+            "pause": None,  # Will be created when needed
+            "game_over": None  # Will be created when needed
         }
         self.current_state = "menu"
+        self.previous_state = None
 
     def handle_event(self, event):
-        new_state = self.states[self.current_state].handle_event(event)
-        if new_state and new_state in self.states:
-            self.current_state = new_state
+        """Handle events and state transitions"""
+        if self.current_state in self.states and self.states[self.current_state]:
+            next_state = self.states[self.current_state].handle_event(event)
+            if next_state:
+                self._change_state(next_state)
 
     def update(self, dt):
-        self.states[self.current_state].update(dt)
+        """Update current state"""
+        if self.current_state in self.states and self.states[self.current_state]:
+            self.states[self.current_state].update(dt)
 
     def render(self, screen, fps=0):
-        self.states[self.current_state].render(screen, fps)
+        """Render current state"""
+        if self.current_state in self.states and self.states[self.current_state]:
+            self.states[self.current_state].render(screen, fps)
+
+    def _change_state(self, new_state):
+        """Change to a new state"""
+        self.previous_state = self.current_state
+        self.current_state = new_state
+
+        # Create state instances as needed
+        if new_state == "gameplay":
+            self.states["gameplay"] = GameplayState()
+        elif new_state == "pause":
+            self.states["pause"] = PauseState()
+        elif new_state == "game_over":
+            # Get score from gameplay state if available
+            score = 0
+            if self.states["gameplay"]:
+                score = self.states["gameplay"].score
+            self.states["game_over"] = GameOverState(score)

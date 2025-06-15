@@ -1,101 +1,104 @@
 """
-Item Spawner System - Centralized Item Spawning
-==============================================
-
-This module provides a centralized system for spawning all types of items in the game.
-It replaces the scattered spawn logic found in GameplayState and DropSystem.
+Item Spawner - Manages spawning of all items including powerups
 """
 
 import random
 import math
-from entities.items import Weapon, HealthPack, Powerup
-from utils.constants import TILE_SIZE, MAP_WIDTH, MAP_HEIGHT
+from utils.constants import (
+    MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, TILE_GRASS
+)
+from systems.items import ItemFactory, create_random_item, create_random_powerup
 
 
 class ItemSpawner:
-    """
-    Centralized system for spawning items in the game.
-    Handles weapons, health packs, powerups, and their positioning logic.
-    """
+    """Manages spawning of items across the map"""
 
     def __init__(self, map_generator):
-        """Initialize the item spawner.
+        """Initialize item spawner
 
         Args:
-            map_generator: Reference to the map generator for walkable position checks
+            map_generator: Reference to the map generator for tile checking
         """
         self.map_generator = map_generator
         self.items = []
+        self.max_items = 20  # Maximum items on map at once
+        self.spawn_timer = 0
+        self.spawn_interval = 8.0  # Spawn item every 8 seconds
+        self.powerup_spawn_timer = 0
+        self.powerup_spawn_interval = 25.0  # Spawn powerup every 25 seconds
 
-        # Sequential weapon spawning state
-        self.current_weapon_tier = 1  # Start with shotgun (index 1 in WEAPON_HIERARCHY)
-        self.next_weapon_ready = True  # Flag to indicate if next weapon should be spawned
+    def _is_item_expired(self, item):
+        """Check if item is expired, handling both method and attribute cases
+
+        Args:
+            item: Item to check
+
+        Returns:
+            bool: True if item is expired
+        """
+        is_expired_attr = getattr(item, 'is_expired', None)
+        if callable(is_expired_attr):
+            return is_expired_attr()
+        elif isinstance(is_expired_attr, bool):
+            return is_expired_attr
+        else:
+            # Default to not expired if attribute doesn't exist
+            return False
+
+    def _try_pickup_item(self, item, player):
+        """Try to pickup item using available methods
+
+        Args:
+            item: Item to pickup
+            player: Player instance
+
+        Returns:
+            bool: True if item was picked up successfully
+        """
+        # Try 'pickup' method first (if exists)
+        if hasattr(item, 'pickup') and callable(item.pickup):
+            return item.pickup(player)
+        # Try 'collect' method as fallback
+        elif hasattr(item, 'collect') and callable(item.collect):
+            return item.collect(player)
+        else:
+            # No pickup method available
+            return False
 
     def update(self, dt):
-        """Update the item spawner.
+        """Update spawner timers and spawn items
 
         Args:
             dt (float): Time delta in seconds
         """
-        # Remove picked up items
-        self.items = [item for item in self.items if not item.picked_up]
+        # Update all items
+        expired_items = []
+        for item in self.items:
+            if hasattr(item, 'update'):
+                item.update(dt)
+            if self._is_item_expired(item):
+                expired_items.append(item)
 
-    def spawn_weapon(self, weapon_type, position=None, near_player=False, player_pos=None):
-        """Spawn a specific weapon type.
+        # Remove expired items
+        for item in expired_items:
+            self.items.remove(item)
 
-        Args:
-            weapon_type (str): Type of weapon to spawn
-            position (tuple, optional): Specific (x, y) position to spawn at
-            near_player (bool): Whether to spawn near the player
-            player_pos (tuple, optional): Player position (x, y) if near_player is True
+        # Update spawn timers
+        self.spawn_timer += dt
+        self.powerup_spawn_timer += dt
 
-        Returns:
-            Weapon: The spawned weapon, or None if no suitable position was found
-        """
-        spawn_pos = position or self._find_spawn_position(near_player, player_pos)
-        if spawn_pos:
-            weapon = Weapon(spawn_pos[0], spawn_pos[1], weapon_type)
-            self.items.append(weapon)
-            return weapon
-        return None
+        # Spawn basic items
+        if self.spawn_timer >= self.spawn_interval and len(self.items) < self.max_items:
+            self.spawn_random_item()
+            self.spawn_timer = 0
 
-    def spawn_next_tier_weapon(self, current_weapon_type=None):
-        """Spawn the next weapon in the tier sequence.
+        # Spawn powerups (less frequent)
+        if self.powerup_spawn_timer >= self.powerup_spawn_interval:
+            self.spawn_powerup()
+            self.powerup_spawn_timer = 0
 
-        Args:
-            current_weapon_type (str, optional): The weapon type that was just picked up
-
-        Returns:
-            Weapon: The spawned weapon, or None if no weapon was spawned
-        """
-        if not self.next_weapon_ready:
-            return None
-
-        # If a current weapon type is provided, advance the tier based on it
-        if current_weapon_type:
-            try:
-                picked_up_tier = Weapon.WEAPON_HIERARCHY.index(current_weapon_type)
-                if picked_up_tier == self.current_weapon_tier:
-                    self._advance_weapon_tier()
-            except ValueError:
-                # Weapon type not found in hierarchy, continue with current tier
-                pass
-
-        # Get the current weapon type from the hierarchy
-        if self.current_weapon_tier < len(Weapon.WEAPON_HIERARCHY):
-            weapon_type = Weapon.WEAPON_HIERARCHY[self.current_weapon_tier]
-
-            # Spawn the weapon at a random position
-            weapon = self.spawn_weapon(weapon_type)
-
-            if weapon:
-                self.next_weapon_ready = False  # Don't spawn another until this one is picked up
-                return weapon
-
-        return None
-
-    def spawn_health_pack(self, position=None, near_player=False, player_pos=None):
-        """Spawn a health pack.
+    def spawn_random_item(self, position=None, near_player=False, player_pos=None):
+        """Spawn a random basic item
 
         Args:
             position (tuple, optional): Specific (x, y) position to spawn at
@@ -103,17 +106,19 @@ class ItemSpawner:
             player_pos (tuple, optional): Player position (x, y) if near_player is True
 
         Returns:
-            HealthPack: The spawned health pack, or None if no suitable position was found
+            Item: The spawned item, or None if no suitable position was found
         """
         spawn_pos = position or self._find_spawn_position(near_player, player_pos)
         if spawn_pos:
-            health_pack = HealthPack(spawn_pos[0], spawn_pos[1])
-            self.items.append(health_pack)
-            return health_pack
+            # Create random basic item (health, ammo, weapon)
+            item = create_random_item(spawn_pos[0], spawn_pos[1], powerup_chance=0.0)
+            if item:
+                self.items.append(item)
+                return item
         return None
 
     def spawn_powerup(self, position=None, near_player=False, player_pos=None):
-        """Spawn a powerup.
+        """Spawn a powerup
 
         Args:
             position (tuple, optional): Specific (x, y) position to spawn at
@@ -125,143 +130,188 @@ class ItemSpawner:
         """
         spawn_pos = position or self._find_spawn_position(near_player, player_pos)
         if spawn_pos:
-            powerup = Powerup(spawn_pos[0], spawn_pos[1])
-            self.items.append(powerup)
-            return powerup
+            powerup = create_random_powerup(spawn_pos[0], spawn_pos[1])
+            if powerup:
+                self.items.append(powerup)
+                print(f"Powerup spawned: {powerup.item_type}")
+                return powerup
         return None
 
-    def spawn_random_item(self, position=None, near_player=False, player_pos=None, weapon_type=None):
-        """Spawn a random item (health pack or powerup, or specific weapon).
+    def spawn_specific_item(self, item_type, position=None, near_player=False, player_pos=None, **kwargs):
+        """Spawn a specific item type
 
         Args:
-            position (tuple, optional): Specific (x, y) position to spawn at
+            item_type (str): Type of item to spawn
+            position (tuple, optional): Specific (x, y) position
+            near_player (bool): Whether to spawn near player
+            player_pos (tuple, optional): Player position if near_player is True
+            **kwargs: Additional arguments for item creation
+
+        Returns:
+            Item: The spawned item, or None if failed
+        """
+        spawn_pos = position or self._find_spawn_position(near_player, player_pos)
+        if spawn_pos:
+            item = ItemFactory.create_item(item_type, spawn_pos[0], spawn_pos[1], **kwargs)
+            if item:
+                self.items.append(item)
+                return item
+        return None
+
+    def spawn_weapon(self, weapon_type, position=None, near_player=False, player_pos=None):
+        """Spawn a specific weapon
+
+        Args:
+            weapon_type (str): Type of weapon to spawn
+            position (tuple, optional): Specific (x, y) position
+            near_player (bool): Whether to spawn near player
+            player_pos (tuple, optional): Player position if near_player is True
+
+        Returns:
+            WeaponPickup: The spawned weapon, or None if failed
+        """
+        return self.spawn_specific_item("weapon", position, near_player, player_pos, weapon_type=weapon_type)
+
+    def spawn_health_pack(self, position=None, near_player=False, player_pos=None, heal_amount=25):
+        """Spawn a health pack
+
+        Args:
+            position (tuple, optional): Specific (x, y) position
+            near_player (bool): Whether to spawn near player
+            player_pos (tuple, optional): Player position if near_player is True
+            heal_amount (int): Amount of health to restore
+
+        Returns:
+            HealthPack: The spawned health pack, or None if failed
+        """
+        return self.spawn_specific_item("health", position, near_player, player_pos, heal_amount=heal_amount)
+
+    def _find_spawn_position(self, near_player=False, player_pos=None, max_attempts=50):
+        """Find a valid spawn position
+
+        Args:
             near_player (bool): Whether to spawn near the player
-            player_pos (tuple, optional): Player position (x, y) if near_player is True
-            weapon_type (str, optional): Specific weapon type to create, if None a random item is created
+            player_pos (tuple, optional): Player position (x, y)
+            max_attempts (int): Maximum attempts to find valid position
 
         Returns:
-            Item: The spawned item, or None if no suitable position was found
+            tuple: Valid (x, y) position, or None if not found
         """
-        # If a specific weapon type is provided, create that weapon
-        if weapon_type is not None:
-            return self.spawn_weapon(weapon_type, position, near_player, player_pos)
-
-        # Otherwise, randomly choose between health pack and powerup
-        item_type = random.choice(['health', 'powerup'])
-
-        if item_type == 'health':
-            return self.spawn_health_pack(position, near_player, player_pos)
-        else:
-            return self.spawn_powerup(position, near_player, player_pos)
-
-    def spawn_zombie_drop(self, zombie_pos):
-        """Spawn an item when a zombie dies (10% chance for health pack or powerup).
-
-        Args:
-            zombie_pos (tuple): Position (x, y) where the zombie died
-
-        Returns:
-            Item: The spawned item, or None if no item was spawned
-        """
-        # 10% chance for zombie to drop something
-        if random.random() < 0.1:
-            # 80% chance for health pack, 20% chance for powerup
-            if random.random() < 0.8:
-                return self.spawn_health_pack(position=zombie_pos)
+        for _ in range(max_attempts):
+            if near_player and player_pos:
+                # Spawn within a radius of the player
+                radius = random.uniform(100, 300)  # 100-300 pixels from player
+                angle = random.uniform(0, 2 * math.pi)
+                x = player_pos[0] + radius * math.cos(angle)
+                y = player_pos[1] + radius * math.sin(angle)
             else:
-                return self.spawn_powerup(position=zombie_pos)
-        return None
+                # Spawn anywhere on the map
+                x = random.uniform(0, MAP_WIDTH * TILE_SIZE)
+                y = random.uniform(0, MAP_HEIGHT * TILE_SIZE)
 
-    def weapon_picked_up(self, weapon_type):
-        """Called when a weapon is picked up to potentially spawn the next tier.
-
-        Args:
-            weapon_type (str): Type of weapon that was picked up
-
-        Returns:
-            Weapon: The next spawned weapon, or None if no weapon was spawned
-        """
-        # Mark that the next weapon in sequence is ready to spawn
-        self.next_weapon_ready = True
-
-        # Spawn the next tier weapon
-        return self.spawn_next_tier_weapon(weapon_type)
-
-    def initialize_weapon_sequence(self):
-        """Initialize the weapon sequence by spawning the first weapon (shotgun)."""
-        self.current_weapon_tier = 1  # Start with shotgun
-        self.next_weapon_ready = True
-        return self.spawn_next_tier_weapon()
-
-    def _advance_weapon_tier(self):
-        """Advance to the next weapon tier in the sequence."""
-        self.current_weapon_tier = (self.current_weapon_tier + 1) % len(Weapon.WEAPON_HIERARCHY)
-
-        # Skip pistol (always at index 0) as it's the starting weapon
-        if self.current_weapon_tier == 0:
-            self.current_weapon_tier = 1
-
-    def _find_spawn_position(self, near_player=False, player_pos=None):
-        """Find a suitable spawn position for an item.
-
-        Args:
-            near_player (bool): Whether to find a position near the player
-            player_pos (tuple, optional): Player position (x, y) if near_player is True
-
-        Returns:
-            tuple: (x, y) position, or None if no suitable position was found
-        """
-        if near_player and player_pos:
-            # Find a position within 10 tiles of the player
-            max_distance = 10 * TILE_SIZE
-            min_distance = 3 * TILE_SIZE
-            center_x, center_y = player_pos
-        else:
-            # Find a position anywhere on the map
-            max_distance = min(MAP_WIDTH, MAP_HEIGHT) * TILE_SIZE / 2
-            min_distance = 0
-            # Use center of map as reference point
-            center_x = (MAP_WIDTH * TILE_SIZE) / 2
-            center_y = (MAP_HEIGHT * TILE_SIZE) / 2
-
-        # Try to find a walkable position
-        for _ in range(50):  # Limit attempts to avoid infinite loop
-            # Random angle
-            angle = random.uniform(0, 2 * math.pi)
-            # Random distance
-            distance = random.uniform(min_distance, max_distance)
-
-            # Calculate position
-            x = center_x + distance * math.cos(angle)
-            y = center_y + distance * math.sin(angle)
-
-            # Ensure position is within map bounds
-            x = max(0, min(x, MAP_WIDTH * TILE_SIZE - TILE_SIZE))
-            y = max(0, min(y, MAP_HEIGHT * TILE_SIZE - TILE_SIZE))
-
-            # Check if position is walkable
-            if self.map_generator.is_walkable(x, y):
-                return (x, y)
+            # Check if position is valid (on grass)
+            if self._is_valid_spawn_position(x, y):
+                return x, y
 
         return None
 
-    def remove_item(self, item):
-        """Remove an item from the items list.
+    def _is_valid_spawn_position(self, x, y):
+        """Check if position is valid for spawning
 
         Args:
-            item: The item to remove
-        """
-        if item in self.items:
-            self.items.remove(item)
-
-    def get_items(self):
-        """Get the list of items.
+            x, y (float): Position to check
 
         Returns:
-            list: List of items
+            bool: True if position is valid for spawning
         """
-        return self.items
+        # Check bounds
+        if x < 0 or x >= MAP_WIDTH * TILE_SIZE or y < 0 or y >= MAP_HEIGHT * TILE_SIZE:
+            return False
 
-    def clear_items(self):
-        """Clear all items."""
-        self.items = []
+        # Check tile type (can only spawn on grass)
+        tile_type = self.map_generator.get_tile_at(x, y)
+        if tile_type != TILE_GRASS:
+            return False
+
+        # Check if too close to existing items
+        for item in self.items:
+            distance = math.sqrt((x - item.x) ** 2 + (y - item.y) ** 2)
+            if distance < 50:  # Minimum 50 pixels between items
+                return False
+
+        return True
+
+    def check_pickups(self, player):
+        """Check for item pickups by player
+
+        Args:
+            player: Player instance
+
+        Returns:
+            list: List of picked up items
+        """
+        picked_up_items = []
+
+        for item in self.items[:]:  # Use slice to avoid modification during iteration
+            if self._is_item_expired(item):
+                continue
+
+            # Check collision with player
+            distance = math.sqrt((player.x - item.x) ** 2 + (player.y - item.y) ** 2)
+            pickup_radius = 25  # Pickup radius
+
+            if distance <= pickup_radius:
+                # Try to pickup item using available method
+                if self._try_pickup_item(item, player):
+                    picked_up_items.append(item)
+                    self.items.remove(item)  # Remove from items list after successful pickup
+
+        return picked_up_items
+
+    def render(self, screen, camera_offset):
+        """Render all items
+
+        Args:
+            screen: Pygame screen surface
+            camera_offset: Camera offset (x, y)
+        """
+        for item in self.items:
+            if not self._is_item_expired(item):
+                item.render(screen, camera_offset)
+
+    def get_items_info(self):
+        """Get information about current items for debugging
+
+        Returns:
+            dict: Information about items
+        """
+        active_items = [item for item in self.items if not self._is_item_expired(item)]
+
+        item_counts = {}
+        for item in active_items:
+            item_type = item.item_type
+            item_counts[item_type] = item_counts.get(item_type, 0) + 1
+
+        return {
+            'total_items': len(active_items),
+            'max_items': self.max_items,
+            'item_types': item_counts,
+            'spawn_timer': self.spawn_timer,
+            'powerup_timer': self.powerup_spawn_timer
+        }
+
+    def clear_all_items(self):
+        """Remove all items from the map"""
+        self.items.clear()
+
+    def set_spawn_rates(self, item_interval=None, powerup_interval=None):
+        """Adjust spawn rates
+
+        Args:
+            item_interval (float, optional): New item spawn interval
+            powerup_interval (float, optional): New powerup spawn interval
+        """
+        if item_interval is not None:
+            self.spawn_interval = item_interval
+        if powerup_interval is not None:
+            self.powerup_spawn_interval = powerup_interval

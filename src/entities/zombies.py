@@ -9,7 +9,8 @@ from utils.constants import (
     RED
 )
 from utils.sprite_loader import get_sprite, get_texture
-from systems import collisions
+# Import collisions přímo místo přes systems balíček
+from systems.collisions import resolve_movement
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -90,7 +91,7 @@ class Zombie(Entity):
             dy /= distance
 
             # Use the collision system to resolve movement with wall collision detection
-            new_x, new_y, collided = collisions.resolve_movement(self, dx, dy, dt, base_speed)
+            new_x, new_y, collided = resolve_movement(self, dx, dy, dt, base_speed)
             self.x, self.y = new_x, new_y
 
             self.is_moving = True

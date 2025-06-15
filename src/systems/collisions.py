@@ -9,7 +9,7 @@ different entity types and provides a unified interface for collision checks.
 
 import math
 from utils.constants import (
-    TILE_SIZE, TILE_GRASS, TILE_OBJECT, TILE_WALL, TILE_WOOD,
+    TILE_GRASS, TILE_OBJECT, TILE_WOOD,
     ZOMBIE_COLLISION_RADIUS
 )
 

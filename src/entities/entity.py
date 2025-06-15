@@ -20,6 +20,7 @@ class Entity:
         self.height = height
         self.color = color
         self.rect = pygame.Rect(x, y, width, height)
+        self.current_sprite = None
     
     def update(self, dt):
         """Update entity state
@@ -41,4 +42,10 @@ class Entity:
         # Draw the entity with camera offset
         draw_x = self.rect.x - camera_offset[0]
         draw_y = self.rect.y - camera_offset[1]
-        pygame.draw.rect(screen, self.color, (draw_x, draw_y, self.width, self.height))
+        if self.current_sprite:
+            sprite_rect = self.current_sprite.get_rect()
+            sprite_x = draw_x + (self.width - sprite_rect.width) // 2
+            sprite_y = draw_y + (self.height - sprite_rect.height) // 2
+            screen.blit(self.current_sprite, (sprite_x, sprite_y))
+        else:
+            pygame.draw.rect(screen, self.color, (draw_x, draw_y, self.width, self.height))
