@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from entities.zombies import FastZombie
 from systems import collisions
 from utils.constants import *
-from systems.audio import music_manager
+from systems.audio import sound_manager
 from systems.collisions import check_entity_collision, initialize as collision_init
 from systems.enemy_spawner import EnemySpawner
 from systems.item_spawner import ItemSpawner
@@ -63,15 +63,16 @@ class MenuState(GameState):
         """Update menu state"""
         # Start menu music
         if not self.music_started:
-            music_manager.play_music("menu_music")
+            sound_manager.play_music("music_menu")
             self.music_started = True
+
 
     def handle_event(self, event):
         """Handle menu events"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 # Stop menu music before switching to gameplay
-                music_manager.stop_music()
+                sound_manager.stop_music()
                 return "gameplay"
 
             elif event.key == pygame.K_h:
@@ -80,18 +81,19 @@ class MenuState(GameState):
 
             elif event.key == pygame.K_m:
                 # Toggle music
-                if music_manager.is_playing():
-                    music_manager.stop_music()
+                if sound_manager.music_playing:
+                    sound_manager.stop_music()
                 else:
-                    music_manager.play_music("menu_music")
+                    sound_manager.play_music("music_menu")
 
             elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
-                # Increase volume
-                music_manager.set_volume(min(1.0, music_manager.get_volume() + 0.1))
+            # Increase volume
+                current_volume = sound_manager.music_volume  # Změněno z get_volume()
+                sound_manager.set_music_volume(min(1.0, current_volume + 0.1))
 
             elif event.key == pygame.K_MINUS:
-                # Decrease volume
-                music_manager.set_volume(max(0.0, music_manager.get_volume() - 0.1))
+                current_volume = sound_manager.music_volume  # Změněno z get_volume()
+                sound_manager.set_music_volume(max(0.0, current_volume - 0.1))
 
         return None
 
@@ -187,7 +189,7 @@ class GameplayState(GameState):
 
         # Start gameplay music
         if not self.music_started:
-            music_manager.play_music("gameplay_music")
+            sound_manager.play_music("music_boss_trance")  # Použít boss_trance pro gameplay
             self.music_started = True
 
         # Check if left mouse button is held down for continuous firing
@@ -323,6 +325,26 @@ class GameplayState(GameState):
                 # Add muzzle flash animation
                 self._add_muzzle_flash_animation()
 
+                # Play weapon sound based on weapon type
+                current_weapon = self.player.get_current_weapon()
+                if current_weapon:
+                    weapon_type = current_weapon.get_weapon_type()
+
+                    # Map weapon types to actual sound file names (without 'weapons_' prefix)
+                    sound_mapping = {
+                        "pistol": "pistol",
+                        "shotgun": "shotgun",
+                        "assault_rifle": "assault",
+                        "sniper_rifle": "sniper",
+                        "bazooka": "bazooka_fire"
+                    }
+
+                    # Play the corresponding sound with 'weapons' category
+                    sound_name = sound_mapping.get(weapon_type)
+                    if sound_name:
+                        from systems.audio import sound_manager
+                        sound_manager.play_sound(f"weapons_{sound_name}")
+
                 if isinstance(projectiles, list):
                     # Multiple projectiles (shotgun)
                     self.bullets.extend(projectiles)
@@ -422,10 +444,12 @@ class GameplayState(GameState):
 
         for zombie in zombies:
             if check_entity_collision(self.player, zombie):
-                # Zombie attacks player
-                zombie.attack(self.player)
-                animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
+                # Zombie attacks player - only add blood effect if attack succeeds
+                if zombie.attack(self.player):
+                    # Add blood splatter when player is actually hit
+                    animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
 
+                # Check if player died AFTER the attack
                 if self.player.is_dead():
                     return "game_over"
 
@@ -434,6 +458,7 @@ class GameplayState(GameState):
             animation_system.add_effect('explosion', item.x, item.y, 0.5, size=0.5)
 
         return None
+
 
     def _render_ui(self, screen, fps):
         """Render game UI using GameUI system"""
@@ -467,6 +492,10 @@ class GameplayState(GameState):
 
         # Add explosion visual effect
         animation_system.add_effect('explosion', explosion_x, explosion_y, 0.6, radius=explosion_radius)
+
+        # Play explosion sound
+        from systems.audio import sound_manager
+        sound_manager.play_sound("effects_explosion")
 
         # Damage all zombies in explosion radius
         import math
@@ -702,6 +731,9 @@ class HighScoresState(GameState):
         # Load high scores
         self.high_scores = self._load_high_scores()
 
+        # Music info
+        self.music_started = True
+
     def _load_high_scores(self):
         """Load high scores from file"""
         import json
@@ -714,7 +746,10 @@ class HighScoresState(GameState):
 
     def update(self, dt):
         """Update high scores state"""
-        pass
+        # Start menu music
+        if not self.music_started:
+            sound_manager.play_music("music_menu")
+            self.music_started = True
 
     def handle_event(self, event):
         """Handle high scores events"""

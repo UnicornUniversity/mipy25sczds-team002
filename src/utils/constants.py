@@ -34,8 +34,8 @@ ZOMBIE_SPEED_MIN = 80  # Minimum speed for weak zombies
 ZOMBIE_SPEED_MAX = 120  # Maximum speed for weak zombies
 TOUGH_ZOMBIE_SPEED_MIN = 50  # Minimum speed for tough zombies
 TOUGH_ZOMBIE_SPEED_MAX = 80  # Maximum speed for tough zombies
-FAST_ZOMBIE_SPEED_MIN = 160  # Minimum speed for fast zombies
-FAST_ZOMBIE_SPEED_MAX = 220  # Maximum speed for fast zombies
+FAST_ZOMBIE_SPEED_MIN = 190  # Minimum speed for fast zombies
+FAST_ZOMBIE_SPEED_MAX = 250  # Maximum speed for fast zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
 
 # Enemy Spawning

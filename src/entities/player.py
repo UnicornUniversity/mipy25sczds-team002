@@ -41,6 +41,10 @@ class Player(Entity):
         self.sprite_state = "stand"  # stand, gun, reload, etc.
         self._load_sprites()
 
+        # Sound effects
+        self.footstep_timer = 0.0
+        self.footstep_interval = 0.3  # Time between footstep sounds
+
     def _load_sprites(self):
         """Load player sprites from survivor category"""
         from utils.sprite_loader import get_texture

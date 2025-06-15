@@ -5,15 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions.">
-      <change afterPath="$PROJECT_DIR$/assets/sounds/music/menu.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/pistol.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/shot-rifle-39-mm-37542.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/shotgun.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/single-gunshot-52-80191.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/sniper.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/bullet_hit.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_1.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_2.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_3.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/powerup-41954.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/reload.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/zombie_1.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/zombie_2.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/potential_improvements.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/sounds/music/menu/trance_boss_battle_bpm150.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/music/boss_trance.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/assault.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/weapons/assault.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/bazooka_fire.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/weapons/bazooka_fire.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/explosion.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/effects/explosion.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/shot-rifle-39-mm-37542.mp3" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/asset_management_system.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/development_guidelines.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/development_guidelines.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/game_design.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/game_design.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/music_system.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/audio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/items/item_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/math_utils.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +82,7 @@
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/sounds/weapons",
+    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/sounds/effects",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -77,13 +93,14 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\effects" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\weapons" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\music" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
-      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\fonts" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\effects" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\music" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\spritesheets" />
     </key>
@@ -145,7 +162,7 @@
       <workItem from="1749917479841" duration="1833000" />
       <workItem from="1749974882267" duration="3000" />
       <workItem from="1749974895935" duration="16018000" />
-      <workItem from="1749991064275" duration="13623000" />
+      <workItem from="1749991064275" duration="16460000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -291,7 +308,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750003877231</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions.">
+      <option name="closed" value="true" />
+      <created>1750005177493</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1750005177493</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -334,13 +359,18 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/game/game_state.py</url>
-          <line>529</line>
+          <line>558</line>
           <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/systems/audio.py</url>
+          <line>104</line>
+          <option name="timeStamp" value="7" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750004250916" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750007441271" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

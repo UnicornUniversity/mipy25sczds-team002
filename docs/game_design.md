@@ -1,12 +1,10 @@
-# Deadlock - Game Design Document
+# Deadlock - Implemented Features
 
 ## Game Overview
 - Top-down zombie survival game with pixel art graphics
 - Player's objective is to survive as long as possible and achieve the highest score
-- Game takes place on a square map with buildings, obstacles, and resources
+- Game takes place on a procedurally generated map with obstacles
 - Increasing difficulty over time to challenge the player
-
-> **Note:** This document has been updated to reflect a more realistic scope for a 3-person team with a 2-day development timeline. Features marked with "(Optional)" are lower priority and should only be implemented if time permits.
 
 ## Core Gameplay Mechanics
 
@@ -15,8 +13,8 @@
 - Mouse aiming for weapons
 - Left mouse button to shoot
 - R key to reload weapons
-- E key to interact with objects (pick up items, open doors)
-- Space bar for dodge roll (with cooldown) (Optional)
+- Q/E keys to cycle through weapons
+- Number keys (1-5) to switch weapons directly
 
 ### Survival Elements
 - Player has limited health (HP)
@@ -28,106 +26,96 @@
 ### Map and Environment
 - Procedurally generated square map
 - Various environment elements:
-  - Buildings (can be entered) (Optional)
-  - Obstacles (trees, cars, barricades)
-  - Destructible objects (Optional)
-  - Loot containers (ammo boxes, supply crates)
-- Limited visibility at night or in buildings (Optional)
-- Map boundaries that prevent player from leaving the area
+  - Obstacles (objects that slow movement)
+  - Map boundaries that prevent player from leaving the area
 
 ## Entities
 
 ### Player
-- Customizable character with different sprites (Optional)
 - Health system with visual indicator
-- Inventory for weapons and items
-- Stamina system for special movements (dodge roll) (Optional)
+- Weapon inventory system with up to 5 weapons
+- Different sprites based on equipped weapon
+- Footstep sounds during movement
 
 ### Zombies
-- Basic zombie: Slow movement, medium health, medium damage
-- Runner zombie: Fast movement, low health, low damage (Optional)
-- Tank zombie: Very slow movement, high health, high damage (Optional)
-- Boss zombie (rare): Special abilities, very high health, high damage (Optional)
-- Zombies follow player using pathfinding
-- Zombies can break through weak obstacles (Optional)
-- Zombie spawning increases in frequency and difficulty over time
+- Basic zombie: Balanced speed, health, and damage
+- Fast zombie: Higher speed, lower health, lower damage
+- Tough zombie: Lower speed, higher health, higher damage
+- Zombies follow player using basic pathfinding
+- Zombies make groaning sounds and attack sounds
+- Zombies have different visual appearances (color tints)
+- Stuck detection system to prevent zombies from getting trapped
 
 ### Items and Pickups
 - Health packs: Restore player health
-- Ammo: Replenish weapon ammunition
+- Ammo: Provides infinite ammo for a limited time
 - Weapons: New weapons with different characteristics
-- Power-ups: Temporary boosts (speed, damage, invincibility) (Optional)
+- Power-ups:
+  - Speed Boost: Increases player movement speed
+  - Damage Boost: Increases weapon damage
+  - Health Regeneration: Regenerates health over time
+  - Invincibility: Makes player invulnerable
+  - Rapid Fire: Increases weapon fire rate
 
 ## Weapons System
 
 ### Weapon Types
 - Pistol: Balanced damage/fire rate, unlimited ammo
-- Shotgun: High damage at close range, slow reload (Optional)
-- Assault Rifle: Rapid fire, medium damage (Optional)
-- Sniper Rifle: High damage, slow fire rate, high accuracy (Optional)
-- Melee Weapons: No ammo required, limited range
+- Shotgun: High damage at close range, slow reload, fires multiple pellets
+- Assault Rifle: Rapid fire, medium damage
+- Sniper Rifle: High damage, slow fire rate, high accuracy
+- Bazooka: Explosive damage, very slow fire rate
 
 ### Weapon Mechanics
-- Limited ammunition for all weapons except melee
+- Limited ammunition for all weapons
 - Different reload times for different weapons
-- Weapon switching with number keys or scroll wheel
-- Different sound effects and visual feedback for each weapon (Optional)
-- Weapon upgrades or modifications found throughout the game (Optional)
+- Weapon switching with number keys or Q/E
+- Different sound effects for each weapon
+- Visual muzzle flash effects when shooting
+- Explosive weapons cause area damage
 
 ## Difficulty Scaling
-
-### Time-Based Progression
 - Zombie spawn rate increases over time
-- Stronger zombie types appear as time progresses (Optional)
-- Resources become scarcer over time
-- Environmental hazards may appear (toxic zones, fires) (Optional)
-
-### Score-Based Progression
-- Higher scores trigger special events (zombie hordes) (Optional)
-- Boss zombies appear at specific score thresholds (Optional)
-- New areas of the map unlock at certain scores (Optional)
-- Special challenges appear at score milestones (Optional)
+- Stronger zombie types appear as time progresses
 
 ## User Interface
 
 ### Active UI Elements
-- Health bar: Visual representation of player's current health
-- Ammo counter: Shows current ammo and total ammo for equipped weapon
+- Health bar: Visual representation of player's current health with color gradient
+- Weapon display: Shows current weapon, ammo, and reload status
+- Weapon inventory: Visual display of available weapons with active weapon highlighted
 - Score display: Current score prominently displayed
-- Mini-map: Small map showing nearby zombies and important locations (Optional)
-- Timer: Shows how long the player has survived
+- Notification system: Displays temporary messages for pickups, damage, etc.
 
 ### Menu UI Elements
-- Main Menu: Title, Start Game, Settings, High Scores, Exit
-- Pause Menu: Resume, Settings, Return to Main Menu
-- Game Over Screen: Final Score, Time Survived, Zombies Killed, Restart, Main Menu
-- Settings Menu: Sound volume, Music volume, Graphics options, Controls (Optional)
+- Main Menu: Title, Start Game, High Scores, Exit
+- Game Over Screen: Final Score, Name Input, Restart, Main Menu
+- High Scores Screen: Displays top 10 scores with names and dates
 
 ### Visual Feedback
-- Screen flash when taking damage
-- Blood splatter effects for zombie kills (Optional)
-- Visual cues for low health, low ammo
-- Directional indicators for nearby zombies (Optional)
+- Blood splatter effects for zombie kills
+- Visual cues for low health (health bar color)
+- Muzzle flash when shooting
+- Explosion effects for explosive weapons
 
 ## Audio Design
 
 ### Sound Effects
-- Weapon sounds (firing, reloading, empty)
-- Zombie sounds (groaning, attacking, dying)
-- Player sounds (footsteps, damage, healing) (Optional)
-- Environmental sounds (doors, items, explosions) (Optional)
+- Weapon sounds (firing for different weapon types)
+- Zombie sounds (groaning, attacking)
+- Player sounds (footsteps)
+- Environmental sounds (explosions)
 
 ### Music
-- Dynamic music system that changes based on game state (Optional)
-- Calm music during exploration
-- Intense music during combat or high-stress situations (Optional)
-- Special music for boss encounters (Optional)
-- Game over and victory themes
+- Menu music
+- Gameplay music
+- Volume control for both music and sound effects
+- Music and sound can be toggled on/off
 
-## Technical Requirements
+## Technical Features
 - Built with Pygame
 - Pixel art graphics style
-- Efficient pathfinding for multiple zombies
 - Collision detection system
-- Particle effects system for visual feedback (Optional)
-- Save/load system for high scores (Optional)
+- Animation system for visual effects
+- Save/load system for high scores
+- Sprite loading and management system

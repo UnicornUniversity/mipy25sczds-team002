@@ -73,6 +73,10 @@ class Zombie(Entity):
         self.force_target = None
         self.force_pathfind_timer = 0.0
 
+        # Sound effects
+        self.groan_timer = 0.0
+        self.groan_interval = random.uniform(5.0, 15.0)  # Random interval between groans
+
     def update(self, dt, player_x=None, player_y=None, map_generator=None):
         """Update zombie state to move towards player
 
@@ -84,6 +88,18 @@ class Zombie(Entity):
         """
         # Call parent update first to handle rect position
         super().update(dt)
+
+        # Update groan timer
+        self.groan_timer += dt
+        if self.groan_timer >= self.groan_interval:
+            # Reset timer with a new random interval
+            self.groan_timer = 0
+            self.groan_interval = random.uniform(5.0, 15.0)
+
+            # Play zombie groan sound (with a chance to not play to avoid too many sounds)
+            if random.random() < 0.3 and player_x is not None:  # 30% chance to groan when player is in game
+                from systems.audio import music_manager
+                music_manager.play_sound("zombies_zombie_groan", volume=0.4)  # Lower volume for ambient groans
 
         # If no player position provided, just update timers
         if player_x is None or player_y is None:
@@ -354,6 +370,10 @@ class Zombie(Entity):
                 # Reset attack timer
                 self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
 
+                # Play zombie attack sound
+                from systems.audio import music_manager
+                music_manager.play_sound("zombies_zombie_attack")
+
                 # Deal damage to player
                 if player.take_damage(ZOMBIE_DAMAGE):
                     return True
@@ -551,6 +571,10 @@ class ToughZombie(Zombie):
                 # Reset attack timer
                 self.attack_timer = ZOMBIE_ATTACK_COOLDOWN
 
+                # Play zombie attack sound
+                from systems.audio import music_manager
+                music_manager.play_sound("zombies_zombie_attack")
+
                 # Deal damage to player (more damage than regular zombie)
                 if player.take_damage(TOUGH_ZOMBIE_DAMAGE):
                     return True
@@ -722,6 +746,10 @@ class FastZombie(Zombie):
 
                 # Reset attack timer (faster attack rate)
                 self.attack_timer = ZOMBIE_ATTACK_COOLDOWN * 0.7  # 30% faster attacks
+
+                # Play zombie attack sound
+                from systems.audio import music_manager
+                music_manager.play_sound("zombies_zombie_attack")
 
                 # Deal damage to player (less damage than regular zombie)
                 if player.take_damage(FAST_ZOMBIE_DAMAGE):

@@ -130,7 +130,7 @@ class WeaponPickup(Item):
             "shotgun": "shotgun",
             "assault_rifle": "assault_rifle",
             "sniper_rifle": "sniper_rifle",
-            "bazooka": "explosives"  # Map bazooka to explosives sprite
+            "bazooka": "explosives"
         }
 
         sprite_name = sprite_mapping.get(self.weapon_type, self.weapon_type)

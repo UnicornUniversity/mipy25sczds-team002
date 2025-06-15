@@ -1,6 +1,6 @@
 # Deadlock - Development Guidelines
 
-This document outlines the development guidelines and best practices for the Deadlock project. Following these guidelines will ensure clean code, maintainable architecture, and efficient collaboration during the 2-day development timeline.
+This document outlines the development guidelines and best practices for the Deadlock project. Following these guidelines will ensure clean code, maintainable architecture, and efficient collaboration during development.
 
 ## Table of Contents
 1. [Code Organization](#code-organization)
@@ -40,6 +40,7 @@ src/
   - Each system should be in its own file
   - Systems should be modular and focused on a single responsibility
   - Systems should not directly depend on each other
+  - Complex systems may have their own subdirectories (e.g., `systems/weapons/`, `systems/items/`)
 
 - **utils/**: Contains helper functions and constants
   - `constants.py`: Game constants (screen size, colors, etc.)
@@ -121,22 +122,27 @@ def function_name(param1, param2):
 
 ## Testing Approach
 
-Given the 2-day timeline, focus on efficient testing:
+Focus on efficient testing to ensure game stability and functionality:
 
 ### Manual Testing
 - Test each feature immediately after implementation
 - Create test scenarios for common gameplay situations
 - Focus on critical systems (collision, combat, scoring)
 
+### Unit Testing
+- Write unit tests for core functionality where appropriate
+- Focus on testing utility functions and isolated components
+- Use the tests/ directory for organized test files
+
 ### Integration Testing
-- Test interactions between systems at the end of Day 1
+- Test interactions between systems regularly
 - Ensure all team members test the integrated build
 - Verify that systems work together as expected
 
-### Final Playability Testing
-- Conduct a group playtesting session at the end of Day 2
-- Focus on identifying critical bugs and gameplay issues
-- Make quick adjustments based on immediate feedback
+### Playability Testing
+- Conduct regular playtesting sessions
+- Focus on identifying bugs and gameplay issues
+- Make adjustments based on feedback
 
 ## Git Workflow
 
@@ -161,13 +167,21 @@ Given the 2-day timeline, focus on efficient testing:
 ### Pygame-Specific Optimizations
 - Use sprite groups for efficient rendering
 - Limit the number of active entities based on screen visibility
-- Use dirty rect animation for efficiency
+- Use animation system for visual effects
 - Avoid creating new objects every frame
+- Implement proper resource caching for sprites and sounds
+
+### Rendering Optimizations
+- Only render entities that are visible on screen
+- Use camera system to efficiently manage viewport
+- Implement proper z-ordering for rendering layers
+- Use sprite batching where possible
 
 ### General Optimizations
 - Profile code to identify bottlenecks
 - Use appropriate data structures for the task
 - Limit expensive operations (e.g., pathfinding) to necessary entities
+- Implement stuck detection for zombies to prevent pathfinding issues
 - Consider using spatial partitioning for collision detection
 
 ## Game-Specific Best Practices
@@ -203,4 +217,4 @@ Given the 2-day timeline, focus on efficient testing:
 
 ---
 
-By following these guidelines, the team can maintain clean, maintainable code while working efficiently within the 2-day development timeline. Remember that the primary goal is to create a functional game, so prioritize essential features and clean implementation over perfect code.
+By following these guidelines, the team can maintain clean, maintainable code while working efficiently on the project. Remember that the primary goal is to create a functional and enjoyable game, so prioritize essential features and clean implementation while continuously improving the codebase.
