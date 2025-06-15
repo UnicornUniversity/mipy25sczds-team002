@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from entities.entity import Entity
 from utils.constants import (
     BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, TILE_GRASS,
@@ -10,6 +11,7 @@ from utils.constants import (
 )
 from utils.sprite_loader import get_sprite, get_texture
 from systems import collisions
+from systems.audio import play_sound
 
 class Zombie(Entity):
     """Zombie entity that follows the player"""
@@ -39,6 +41,10 @@ class Zombie(Entity):
 
         # Movement angle for sprite rotation
         self.movement_angle = 0  # Angle in radians (0 = right, pi/2 = down)
+        
+        # Sound tracking
+        self.groan_timer = 0
+        self.groan_interval = random.uniform(3.0, 7.0)  # Náhodný interval mezi groan zvuky
 
     def update(self, dt, player_x, player_y, map_generator=None):
         """Update zombie state to move towards player
@@ -110,6 +116,14 @@ class Zombie(Entity):
         else:
             self.animation_time = 0
 
+        # Zombie groan sounds
+        self.groan_timer += dt
+        if self.groan_timer >= self.groan_interval:
+            self.groan_timer = 0
+            self.groan_interval = random.uniform(3.0, 7.0)  # Nový náhodný interval
+            # Přehraj groan zvuk s nižší hlasitostí
+            play_sound("zombies_zombie_groan", volume=0.2)
+
         # Call parent update to update rect
         super().update(dt)
 
@@ -130,6 +144,9 @@ class Zombie(Entity):
 
             # Only attack if within range
             if distance <= ZOMBIE_ATTACK_RANGE:
+                # Přehraj attack zvuk
+                play_sound("zombies_zombie_attack", volume=0.4)
+                
                 # Start attack animation
                 self.is_attacking = True
                 self.attack_animation_timer = ZOMBIE_ATTACK_DURATION
