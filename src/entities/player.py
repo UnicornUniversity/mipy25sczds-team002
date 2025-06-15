@@ -2,7 +2,8 @@ import pygame
 import math
 from entities.entity import Entity
 from utils.constants import (
-    PLAYER_SIZE, PLAYER_SPEED, PLAYER_MAX_HEALTH, WHITE, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
+    PLAYER_SIZE, PLAYER_SPEED, PLAYER_MAX_HEALTH, WHITE, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE,
+    OBJECT_SPEED_MULTIPLIER, TILE_OBJECT
 )
 from systems.collisions import resolve_movement
 
@@ -54,6 +55,7 @@ class Player(Entity):
         for state, sprite_name in sprite_mappings.items():
             sprite = get_texture("survivor", sprite_name)
             if sprite:
+                # Use original sprite size to match zombie size
                 self.sprites[state] = sprite
             else:
                 print(f"Warning: Could not load survivor sprite: {sprite_name}")
@@ -230,8 +232,17 @@ class Player(Entity):
                 dx /= length
                 dy /= length
 
+            # Calculate base speed
+            base_speed = self.speed
+
+            # Check if player is on an object and apply speed multiplier if needed
+            if self.map_generator:
+                tile_type = self.map_generator.get_tile_at(self.x + self.width // 2, self.y + self.height // 2)
+                if tile_type == TILE_OBJECT:
+                    base_speed *= OBJECT_SPEED_MULTIPLIER
+
             # Use collision system to resolve movement
-            new_x, new_y, collided = resolve_movement(self, dx, dy, dt, self.speed)
+            new_x, new_y, collided = resolve_movement(self, dx, dy, dt, base_speed)
 
             # Check map boundaries
             map_width_px = MAP_WIDTH * TILE_SIZE

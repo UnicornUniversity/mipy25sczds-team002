@@ -5,7 +5,7 @@ Item Spawner - Manages spawning of all items including powerups
 import random
 import math
 from utils.constants import (
-    MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, TILE_GRASS
+    MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, TILE_GRASS, TILE_OBJECT
 )
 from systems.items import ItemFactory, create_random_item, create_random_powerup
 
@@ -26,6 +26,7 @@ class ItemSpawner:
         self.spawn_interval = 8.0  # Spawn item every 8 seconds
         self.powerup_spawn_timer = 0
         self.powerup_spawn_interval = 25.0  # Spawn powerup every 25 seconds
+        self.ui = None  # UI reference for notifications, set by game state
 
     def _is_item_expired(self, item):
         """Check if item is expired, handling both method and attribute cases
@@ -233,6 +234,16 @@ class ItemSpawner:
         if tile_type != TILE_GRASS:
             return False
 
+        # Check if too close to walls - check surrounding tiles
+        wall_check_distance = 64  # Check for walls within this distance
+        for check_x in range(int(x - wall_check_distance), int(x + wall_check_distance), 16):
+            for check_y in range(int(y - wall_check_distance), int(y + wall_check_distance), 16):
+                if check_x < 0 or check_x >= MAP_WIDTH * TILE_SIZE or check_y < 0 or check_y >= MAP_HEIGHT * TILE_SIZE:
+                    continue
+                check_tile = self.map_generator.get_tile_at(check_x, check_y)
+                if check_tile != TILE_GRASS and check_tile != TILE_OBJECT:
+                    return False  # Too close to a wall or other non-walkable tile
+
         # Check if too close to existing items
         for item in self.items:
             distance = math.sqrt((x - item.x) ** 2 + (y - item.y) ** 2)
@@ -258,13 +269,18 @@ class ItemSpawner:
 
             # Check collision with player
             distance = math.sqrt((player.x - item.x) ** 2 + (player.y - item.y) ** 2)
-            pickup_radius = 25  # Pickup radius
+            pickup_radius = 40  # Increased pickup radius for better usability
 
             if distance <= pickup_radius:
                 # Try to pickup item using available method
                 if self._try_pickup_item(item, player):
                     picked_up_items.append(item)
                     self.items.remove(item)  # Remove from items list after successful pickup
+
+                    # Show pickup notification if UI is available
+                    if self.ui:
+                        item_name = getattr(item, 'name', None) or getattr(item, 'item_type', 'Item')
+                        self.ui.show_pickup_message(f"Picked up {item_name}")
 
         return picked_up_items
 

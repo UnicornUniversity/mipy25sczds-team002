@@ -37,6 +37,8 @@ class Bullet(Entity):
         self.explosion_radius = 0  # Explosion radius in pixels
         self.lifetime = 0  # Track lifetime for effects
         self.min_travel_time = 0.05  # Minimum time before collision checks (prevents instant collision)
+        self.hit_wall = False  # Flag to indicate wall collision
+        self.wall_hit_explosion = None  # Store explosion data for wall hits
 
     def update(self, dt, map_generator=None):
         """Update bullet position
@@ -73,7 +75,12 @@ class Bullet(Entity):
         if self.lifetime > self.min_travel_time:
             # Check for collision with walls using the collision system
             if map_generator and not collisions.is_position_walkable(self.x + self.width / 2, self.y + self.height / 2):
+                # Store explosion data before marking for removal
+                self.wall_hit_explosion = self.explode() if self.is_explosive else None
                 self.distance_traveled = self.max_distance  # Mark for removal
+                # Set a flag to indicate wall collision for game state to handle
+                self.hit_wall = True
+                return
 
         # Call parent update to update rect
         super().update(dt)

@@ -72,20 +72,13 @@ class Weapon:
         Returns:
             tuple: (weapon_x, weapon_y) - Weapon muzzle position
         """
-        # Jednoduchý offset - zbraň je prostě kousek dopředu ve směru míření
-        # a trochu napravo (když se díváme ve směru míření)
-
-        # Vzdálenost dopředu (ve směru míření)
         forward_distance = 30
 
-        # Vzdálenost napravo (kolmo na směr míření)
         right_distance = 12
 
-        # Výpočet pozice dopředu
         forward_x = player_x + math.cos(aim_angle) * forward_distance
         forward_y = player_y + math.sin(aim_angle) * forward_distance
 
-        # Výpočet pravého offsetu (90° vpravo od směru míření)
         right_angle = aim_angle + math.pi / 2
         weapon_x = forward_x + math.cos(right_angle) * right_distance
         weapon_y = forward_y + math.sin(right_angle) * right_distance

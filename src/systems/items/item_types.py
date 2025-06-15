@@ -121,7 +121,13 @@ class WeaponPickup(Item):
 
     def _load_sprite(self):
         """Load weapon sprite"""
-        self.sprite = get_texture("weapon", self.weapon_type)
+        sprite = get_texture("weapon", self.weapon_type)
+        if sprite:
+            # Scale weapon sprite by a factor of 2 to make it larger on the game field
+            original_width, original_height = sprite.get_size()
+            self.sprite = pygame.transform.scale(sprite, (original_width * 2, original_height * 2))
+        else:
+            self.sprite = None
 
     def collect(self, player):
         """Give weapon to player"""
@@ -148,6 +154,17 @@ class HealthPack(Item):
         super().__init__(x, y, ItemType.HEALTH, ItemRarity.COMMON)
         self.heal_amount = heal_amount
         self.color = GREEN
+        self._load_sprite()
+
+    def _load_sprite(self):
+        """Load health pack sprite"""
+        sprite = get_texture("pickups", "health")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load health pack sprite")
+            self.sprite = None
 
     def collect(self, player):
         """Heal the player"""
@@ -173,6 +190,17 @@ class AmmoPack(Item):
         super().__init__(x, y, ItemType.AMMO, ItemRarity.COMMON)
         self.ammo_amount = ammo_amount
         self.color = BLUE
+        self._load_sprite()
+
+    def _load_sprite(self):
+        """Load ammo pack sprite"""
+        sprite = get_texture("pickups", "ammo")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load ammo pack sprite")
+            self.sprite = None
 
     def collect(self, player):
         """Give ammo to player's current weapon"""
@@ -202,6 +230,28 @@ class Powerup(Item):
         super().__init__(x, y, powerup_type, rarity)
         self.duration = duration
         self.effect_applied = False
+        self._load_sprite()
+
+    def _load_sprite(self):
+        """Load powerup sprite based on item type"""
+        # Map powerup types to sprite names
+        sprite_mapping = {
+            ItemType.SPEED_BOOST.value: "more_speed",
+            ItemType.DAMAGE_BOOST.value: "more_damage",
+            ItemType.HEALTH_REGEN.value: "regeneration",
+            ItemType.INVINCIBILITY.value: "invincibility",
+            ItemType.RAPID_FIRE.value: "ammo"  # Using ammo sprite for rapid fire
+        }
+
+        sprite_name = sprite_mapping.get(self.item_type)
+        if sprite_name:
+            sprite = get_texture("pickups", sprite_name)
+            if sprite:
+                # Resize to 32x32 to match collision rect
+                self.sprite = pygame.transform.scale(sprite, (32, 32))
+            else:
+                print(f"Warning: Could not load powerup sprite: {sprite_name}")
+                self.sprite = None
 
     def collect(self, player):
         """Apply powerup effect to player"""

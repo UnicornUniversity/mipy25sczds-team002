@@ -188,8 +188,9 @@ class Zombie(Entity):
         center_x = screen_x + self.width // 2
         center_y = screen_y + self.height // 2
 
-        # Get zombie sprite from texture atlas
-        sprite = get_texture('zombie', 'zoimbie1_hold')
+        # Get zombie sprite from texture atlas - use stand sprite during attack, hold sprite otherwise
+        sprite_name = 'zoimbie1_stand' if self.is_attacking else 'zoimbie1_hold'
+        sprite = get_texture('zombie', sprite_name)
         if not sprite:
             # Fallback to old sprite system
             sprite = get_sprite('zombie_basic_1')

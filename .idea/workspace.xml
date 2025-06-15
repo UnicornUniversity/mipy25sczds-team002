@@ -4,32 +4,34 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Refactor zombie spawning system: replace `ZombieSpawner` with `EnemySpawner`, streamline spawn logic in `constants.py`, integrate item drops for zombie deaths, update explosion damage and effects, and implement multi-weapon inventory for the player.">
-      <change afterPath="$PROJECT_DIR$/src/systems/items/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/items/item_effects.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/items/item_factory.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/weapons/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/weapons/projectiles.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/weapons/weapon_factory.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/weapons/weapon_inventory.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/systems/weapons/weapon_types.py" afterDir="false" />
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes.">
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/deadlock_icon.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/ammo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/health.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/invincibility.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/more_damage.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/more_speed.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/sprites/pickups/regeneration.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/entity.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/entity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/items.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/sprites/zombie/zoimbie1_gun.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/sprites/zombie/zoimbie1_machine.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/sprites/zombie/zoimbie1_reload.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/sprites/zombie/zoimbie1_silencer.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/map_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/map_generator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/collisions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/collisions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/enemy_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/enemy_spawner.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/effects.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/item_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/item_spawner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/pathfinding.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/animation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/items/item_factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_factory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/items/item_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/weapons.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/weapons/projectiles.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/weapons/projectiles.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/weapons/weapon_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/weapons/weapon_types.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_texture_atlas.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_texture_atlas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/sprite_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/sprite_loader.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,7 +84,7 @@
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -93,8 +95,8 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\fonts" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\utils" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\systems" />
@@ -159,7 +161,8 @@
       <workItem from="1749917055824" duration="411000" />
       <workItem from="1749917479841" duration="1833000" />
       <workItem from="1749974882267" duration="3000" />
-      <workItem from="1749974895935" duration="14726000" />
+      <workItem from="1749974895935" duration="16018000" />
+      <workItem from="1749991064275" duration="4126000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -273,7 +276,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749980330037</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes.">
+      <option name="closed" value="true" />
+      <created>1749989863854</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1749989863854</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -305,20 +316,21 @@
     <MESSAGE value="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings." />
     <MESSAGE value="Integrate centralized collision system: replace entity-specific collision checks with unified `collisions` module, enhance zombie and player movement with collision resolution, implement zombie item drops, and update map walkability logic." />
     <MESSAGE value="Refactor zombie spawning system: replace `ZombieSpawner` with `EnemySpawner`, streamline spawn logic in `constants.py`, integrate item drops for zombie deaths, update explosion damage and effects, and implement multi-weapon inventory for the player." />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactor zombie spawning system: replace `ZombieSpawner` with `EnemySpawner`, streamline spawn logic in `constants.py`, integrate item drops for zombie deaths, update explosion damage and effects, and implement multi-weapon inventory for the player." />
+    <MESSAGE value="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes." />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/entities/player.py</url>
-          <line>213</line>
+          <line>215</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749989748676" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749995489812" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

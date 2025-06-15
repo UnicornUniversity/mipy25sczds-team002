@@ -8,12 +8,10 @@ Refactored to use proper collision system and animation system.
 
 import pygame
 import math
-import random
 from abc import ABC, abstractmethod
 
 from systems import collisions
 from utils.constants import *
-from utils.sprite_loader import get_texture, debug_sprite_info
 from systems.audio import music_manager
 from systems.collisions import check_entity_collision, initialize as collision_init
 from systems.enemy_spawner import EnemySpawner
@@ -106,12 +104,9 @@ class MenuState(GameState):
         # Controls
         controls = [
             "Controls:",
-            "WASD/Arrow Keys - Move",
-            "Mouse - Aim",
             "Left Click - Shoot",
             "R - Reload",
             "1-5 - Switch Weapons",
-            "Q/E - Cycle Weapons",
             "",
             "M - Toggle Music",
             "+/- - Volume Control",
@@ -140,8 +135,14 @@ class GameplayState(GameState):
 
     def __init__(self):
         """Initialize gameplay state"""
-        # Game entities
-        self.player = Player(100, 100)
+        # Add GameUI system
+        from systems.ui import GameUI
+        self.ui = GameUI()
+
+        # Game entities - center player on map
+        map_center_x = (MAP_WIDTH * TILE_SIZE) // 2
+        map_center_y = (MAP_HEIGHT * TILE_SIZE) // 2
+        self.player = Player(map_center_x, map_center_y)
 
         # Game systems
         self.map_generator = MapGenerator()
@@ -151,6 +152,7 @@ class GameplayState(GameState):
 
         self.enemy_system = EnemySpawner(self.map_generator)
         self.item_spawner = ItemSpawner(self.map_generator)
+        self.item_spawner.ui = self.ui  # Connect UI for pickup notifications
         self.bullets = []
 
         self.camera_y = 0
@@ -170,19 +172,28 @@ class GameplayState(GameState):
         if self.paused:
             return
 
+            # Update UI system
+        self.ui.update(dt)
+
         # Start gameplay music
         if not self.music_started:
             music_manager.play_music("gameplay_music")
             self.music_started = True
 
+        # Check if left mouse button is held down for continuous firing
+        if pygame.mouse.get_pressed()[0]:  # Left mouse button
+            # Get current weapon to check if it's an assault rifle
+            current_weapon = self.player.get_current_weapon()
+            if current_weapon and current_weapon.name == "Assault Rifle":
+                self._handle_player_shoot()
+
         self.player.update(dt, self.map_generator)
         self.enemy_system.update(dt, self.player.x, self.player.y)
         self.item_spawner.update(dt)
 
-        self._handle_bullet_update(dt)
-
         animation_system.update(dt)
 
+        self._handle_bullet_update(dt)
         self._update_camera()
         self._check_collisions()
 
@@ -271,11 +282,15 @@ class GameplayState(GameState):
                 if bullet in self.bullets:
                     self.bullets.remove(bullet)
 
-                # Handle explosive bullets
+                # Handle explosive bullets hitting zombies
                 if bullet.is_explosive and hit_zombie:
                     explosion_data = bullet.explode()
                     if explosion_data:
                         self._handle_explosion(explosion_data)
+
+                # Handle explosive bullets hitting walls
+                if bullet.is_explosive and bullet.hit_wall and bullet.wall_hit_explosion:
+                    self._handle_explosion(bullet.wall_hit_explosion)
 
     def _handle_player_shoot(self):
         """Handle player shooting"""
@@ -354,44 +369,11 @@ class GameplayState(GameState):
             animation_system.add_effect('explosion', item.x, item.y, 0.5, size=0.5)
 
     def _render_ui(self, screen, fps):
-        """Render game UI"""
-        # Health bar
-        health_width = 200
-        health_height = 20
-        health_x = 10
-        health_y = 10
+        """Render game UI using GameUI system"""
+        # Use new GameUI system instead of manual UI rendering
+        self.ui.render_hud(screen, self.player, self.score, fps)
+        self.ui.render_notifications(screen)
 
-        # Background
-        pygame.draw.rect(screen, RED, (health_x, health_y, health_width, health_height))
-
-        # Health fill
-        health_percent = self.player.health / self.player.max_health
-        fill_width = int(health_width * health_percent)
-        pygame.draw.rect(screen, GREEN, (health_x, health_y, fill_width, health_height))
-
-        # Health text
-        font = pygame.font.Font(None, 24)
-        health_text = font.render(f"Health: {self.player.health}/{self.player.max_health}", True, WHITE)
-        screen.blit(health_text, (health_x, health_y + 25))
-
-        # Weapon info
-        weapon_info = self.player.get_weapon_info()
-        if weapon_info:
-            weapon_text = font.render(f"{weapon_info['name']}: {weapon_info['ammo']}/{weapon_info['magazine_size']}",
-                                      True, WHITE)
-            screen.blit(weapon_text, (health_x, health_y + 50))
-
-            if weapon_info['is_reloading']:
-                reload_text = font.render(f"Reloading... {int(weapon_info['reload_progress'] * 100)}%", True, YELLOW)
-                screen.blit(reload_text, (health_x, health_y + 75))
-
-        # Score
-        score_text = font.render(f"Score: {self.score}", True, WHITE)
-        screen.blit(score_text, (WINDOW_WIDTH - 150, 10))
-
-        # FPS
-        fps_text = font.render(f"FPS: {int(fps)}", True, WHITE)
-        screen.blit(fps_text, (WINDOW_WIDTH - 150, 35))
 
     def _render_debug_info(self, screen, fps, camera_offset):
         """Render debug information"""

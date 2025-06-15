@@ -148,8 +148,7 @@ class MapGenerator:
         # Use dirt textures for objects
         elif tile_type == TILE_OBJECT:
             # Randomly select one of the two dirt tiles
-            col = random.randint(4, 5)
-            sprite_name = f"tile_dirt_0_{col}"
+            sprite_name = f"tile_tree"
         # Use gray tiles for walls
         elif tile_type == TILE_WALL:
             # Randomly select one of the five gray tiles
@@ -158,7 +157,7 @@ class MapGenerator:
         # Use wood textures for wood
         elif tile_type == TILE_WOOD:
             # Use a specific wood texture
-            sprite_name = "tile_building_wall"
+            sprite_name = "tile_building_floor"
         else:
             # Default to grass
             sprite_name = "tile_grass_0_0"
@@ -190,20 +189,48 @@ class MapGenerator:
         surface_height = MAP_HEIGHT * TILE_SIZE
         surface = pygame.Surface((surface_width, surface_height))
 
-        # Draw each tile on the surface using sprites
+        # First pass: Draw all grass tiles
+        for y in range(MAP_HEIGHT):
+            for x in range(MAP_WIDTH):
+                # Always draw grass as the base layer
+                grass_sprite = self._get_sprite_for_tile(TILE_GRASS)
+                pos_x = x * TILE_SIZE
+                pos_y = y * TILE_SIZE
+                surface.blit(grass_sprite, (pos_x, pos_y))
+
+        # Second pass: Draw walls, wood, and overlay objects on top of grass
         for y in range(MAP_HEIGHT):
             for x in range(MAP_WIDTH):
                 tile_type = self.map_data[y][x]
 
-                # Get sprite for this tile type
-                sprite = self._get_sprite_for_tile(tile_type)
+                # Skip grass tiles as they're already drawn
+                if tile_type == TILE_GRASS:
+                    continue
 
                 # Calculate position
                 pos_x = x * TILE_SIZE
                 pos_y = y * TILE_SIZE
 
-                # Draw the sprite
-                surface.blit(sprite, (pos_x, pos_y))
+                if tile_type == TILE_OBJECT:
+                    # For objects, get the tree sprite which should have transparency
+                    sprite_name = "tile_tree"
+                    sprite = get_sprite(sprite_name)
+
+                    # If sprite not found, try fallback
+                    if sprite is None:
+                        sprite = get_sprite("tile_tree")
+
+                    # If still not found, create a colored rectangle
+                    if sprite is None:
+                        sprite = pygame.Surface((TILE_SIZE, TILE_SIZE))
+                        sprite.fill(TILE_COLORS[TILE_OBJECT])
+
+                    # Draw the object sprite on top of the grass
+                    surface.blit(sprite, (pos_x, pos_y))
+                else:
+                    # For walls and wood, use the normal sprites
+                    sprite = self._get_sprite_for_tile(tile_type)
+                    surface.blit(sprite, (pos_x, pos_y))
 
         return surface
 

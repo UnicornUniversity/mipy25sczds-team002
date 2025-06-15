@@ -259,11 +259,11 @@ class AssetManager:
                         elif col == 6 and row == 0:
                             self._sprites['tile_wall_brick'] = sprite_surface
                             self._texture_atlas.add_texture("tile", "wall_brick", sprite_surface)
-                        elif col == 8 and row == 2:
+                        elif col == 20 and row == 6:
                             self._sprites['tile_tree'] = sprite_surface
                             self._texture_atlas.add_texture("tile", "tree", sprite_surface)
-                        elif col == 12 and row == 2:
-                            self._sprites['tile_building_wall'] = sprite_surface
+                        elif col == 15 and row == 2:
+                            self._sprites['tile_building_floor'] = sprite_surface
                             self._texture_atlas.add_texture("tile", "building_wall", sprite_surface)
                     except ValueError as e:
                         print(f"Error extracting sprite at ({x}, {y}): {e}")
@@ -271,7 +271,7 @@ class AssetManager:
     def _load_individual_sprites(self) -> None:
         """Load individual sprite files into the texture atlas."""
         # Define sprite categories to load
-        sprite_categories = ['weapon', 'survivor', 'zombie', 'items', 'effects', 'ui']
+        sprite_categories = ['weapon', 'survivor', 'zombie', 'items', 'effects', 'ui', 'pickups']
 
         for category in sprite_categories:
             folder_path = os.path.join(self.sprites_path, category)
@@ -328,6 +328,12 @@ class AssetManager:
             ('weapon', 'assault_rifle'): (ITEM_SIZE, ITEM_SIZE),
             ('weapon', 'sniper_rifle'): (ITEM_SIZE, ITEM_SIZE),
             ('weapon', 'explosives'): (ITEM_SIZE, ITEM_SIZE),  # For bazooka
+            ('pickups', 'health'): (64, 64),
+            ('pickups', 'ammo'): (64, 64),
+            ('pickups', 'more_speed'): (64, 64),
+            ('pickups', 'more_damage'): (64, 64),
+            ('pickups', 'regeneration'): (64, 64),
+            ('pickups', 'invincibility'): (64, 64)
         }
 
         # Create fallback sprites for items

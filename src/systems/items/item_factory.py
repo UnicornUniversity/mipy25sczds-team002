@@ -45,9 +45,9 @@ class ItemFactory:
         ItemType.INVINCIBILITY.value: 2,
     }
 
-    # Weapon types pro weapon pickupy
-    _weapon_types = ["pistol", "shotgun", "assault_rifle", "sniper_rifle", "bazooka"]
-    _weapon_weights = [10, 25, 20, 15, 5]  # Pistol least common, shotgun most common
+    # Weapon types pro weapon pickupy (pistol excluded as player always has it)
+    _weapon_types = ["shotgun", "assault_rifle", "sniper_rifle", "bazooka"]
+    _weapon_weights = [25, 20, 15, 5]  # Shotgun most common
 
     @classmethod
     def create_item(cls, item_type: str, x: float, y: float, **kwargs):
@@ -214,11 +214,11 @@ class ItemFactory:
 
 def create_random_item(x: float, y: float, powerup_chance=0.15):
     """Convenience function to create random item
-    
+
     Args:
         x, y (float): Position
         powerup_chance (float): Chance of spawning powerup vs basic item
-        
+
     Returns:
         Item: Random item
     """
@@ -227,10 +227,10 @@ def create_random_item(x: float, y: float, powerup_chance=0.15):
 
 def create_random_powerup(x: float, y: float):
     """Convenience function to create random powerup
-    
+
     Args:
         x, y (float): Position
-        
+
     Returns:
         Powerup: Random powerup
     """
@@ -239,11 +239,11 @@ def create_random_powerup(x: float, y: float):
 
 def create_health_pack(x: float, y: float, heal_amount=25):
     """Convenience function to create health pack
-    
+
     Args:
         x, y (float): Position
         heal_amount (int): Amount of health to restore
-        
+
     Returns:
         HealthPack: Health pack item
     """
@@ -252,11 +252,11 @@ def create_health_pack(x: float, y: float, heal_amount=25):
 
 def create_ammo_pack(x: float, y: float, ammo_amount=30):
     """Convenience function to create ammo pack
-    
+
     Args:
         x, y (float): Position
         ammo_amount (int): Amount of ammo to give
-        
+
     Returns:
         AmmoPack: Ammo pack item
     """
@@ -265,11 +265,11 @@ def create_ammo_pack(x: float, y: float, ammo_amount=30):
 
 def create_weapon_pickup(x: float, y: float, weapon_type=None):
     """Convenience function to create weapon pickup
-    
+
     Args:
         x, y (float): Position
         weapon_type (str, optional): Specific weapon type or random if None
-        
+
     Returns:
         WeaponPickup: Weapon pickup item
     """
@@ -278,11 +278,11 @@ def create_weapon_pickup(x: float, y: float, weapon_type=None):
 
 def create_powerup(x: float, y: float, powerup_type):
     """Convenience function to create specific powerup
-    
+
     Args:
         x, y (float): Position
         powerup_type (str): Type of powerup to create
-        
+
     Returns:
         Powerup: Powerup item
     """

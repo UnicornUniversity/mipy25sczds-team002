@@ -100,12 +100,35 @@ class CollisionSystem:
         if not self.map_generator:
             return False  # If no map generator, assume no wall collisions
 
-        # Check the center of the entity
+        # Check multiple points on the entity's perimeter to prevent partial wall entry
+        # Check center
         center_x = new_x + entity.width / 2
         center_y = new_y + entity.height / 2
+        if not self.is_position_walkable(center_x, center_y):
+            return True
 
-        # Check if the center position is walkable
-        return not self.is_position_walkable(center_x, center_y)
+        # Check corners
+        if not self.is_position_walkable(new_x, new_y):  # Top-left
+            return True
+        if not self.is_position_walkable(new_x + entity.width, new_y):  # Top-right
+            return True
+        if not self.is_position_walkable(new_x, new_y + entity.height):  # Bottom-left
+            return True
+        if not self.is_position_walkable(new_x + entity.width, new_y + entity.height):  # Bottom-right
+            return True
+
+        # Check midpoints of edges
+        if not self.is_position_walkable(new_x, center_y):  # Left edge
+            return True
+        if not self.is_position_walkable(new_x + entity.width, center_y):  # Right edge
+            return True
+        if not self.is_position_walkable(center_x, new_y):  # Top edge
+            return True
+        if not self.is_position_walkable(center_x, new_y + entity.height):  # Bottom edge
+            return True
+
+        # No collision detected
+        return False
 
     def resolve_movement(self, entity, dx, dy, dt, speed):
         """Resolve entity movement with collision detection.

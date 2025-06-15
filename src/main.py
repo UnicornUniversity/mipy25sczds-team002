@@ -18,6 +18,12 @@ def main():
     print("Initializing Deadlock...")
     load_all_assets()
 
+    # Set game icon
+    from utils.sprite_loader import get_texture
+    icon = get_texture("sprites", "deadlock_icon")
+    if icon:
+        pygame.display.set_icon(icon)
+
     # Debug: Print information about loaded sprites
     debug_sprite_info()
 
