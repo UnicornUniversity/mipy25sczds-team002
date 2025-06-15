@@ -39,8 +39,8 @@ FAST_ZOMBIE_SPEED_MAX = 220  # Maximum speed for fast zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
 
 # Enemy Spawning
-INITIAL_MAX_ZOMBIES = 200  # Initial maximum number of zombies
-MAX_ZOMBIES_CAP = 200  # Maximum cap for zombies
+INITIAL_MAX_ZOMBIES = 150  # Initial maximum number of zombies
+MAX_ZOMBIES_CAP = 150  # Maximum cap for zombies
 ZOMBIE_SPAWN_RATE_INITIAL = 4.0  # Initial spawn rate in seconds
 ZOMBIE_SPAWN_RATE_MIN = 0.5  # Minimum spawn rate in seconds
 ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL = 10.0  # Time in seconds between spawn rate decreases
@@ -53,13 +53,13 @@ ZOMBIE_SPAWN_DISTANCE_MAX = 1.2  # Maximum spawn distance multiplier (relative t
 # Health and Damage
 PLAYER_MAX_HEALTH = 100
 ZOMBIE_HEALTH = 30
-ZOMBIE_DAMAGE = 5
+ZOMBIE_DAMAGE = 12
 ZOMBIE_SCORE = 10  # Score for killing weak zombie
 TOUGH_ZOMBIE_HEALTH = 100  # Much tougher than regular zombies
-TOUGH_ZOMBIE_DAMAGE = 20  # Much more damage than regular zombies
+TOUGH_ZOMBIE_DAMAGE = 27  # Much more damage than regular zombies
 TOUGH_ZOMBIE_SCORE = 30  # More score for killing tough zombie
 FAST_ZOMBIE_HEALTH = 15  # Less health than regular zombies
-FAST_ZOMBIE_DAMAGE = 3  # Less damage than regular zombies
+FAST_ZOMBIE_DAMAGE = 6  # Less damage than regular zombies
 FAST_ZOMBIE_SCORE = 20  # More score for killing fast zombie
 ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
 ZOMBIE_ATTACK_RANGE = 30  # Distance at which zombie can attack player

@@ -4,20 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Remove unused visual effect classes and refactor item sprite handling: delete `MuzzleFlash`, `BulletImpact`, and `BloodSplatter` classes; implement `_load_sprite` methods for `HealthPack`, `AmmoPack`, `Powerup`, and `WeaponPickup` with scaling; adjust game state to center player and utilize `GameUI` for HUD rendering.">
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/implementation_plan.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/task_distribution.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/collisions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/collisions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/enemy_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/enemy_spawner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/item_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/item_spawner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/items/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/items/item_factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_factory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/items/item_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/sprite_loader.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/sprite_loader.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -148,7 +141,7 @@
       <workItem from="1749917479841" duration="1833000" />
       <workItem from="1749974882267" duration="3000" />
       <workItem from="1749974895935" duration="16018000" />
-      <workItem from="1749991064275" duration="10373000" />
+      <workItem from="1749991064275" duration="12343000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -278,7 +271,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749995644431</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems.">
+      <option name="closed" value="true" />
+      <created>1750001811079</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1750001811079</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -312,20 +313,21 @@
     <MESSAGE value="Refactor zombie spawning system: replace `ZombieSpawner` with `EnemySpawner`, streamline spawn logic in `constants.py`, integrate item drops for zombie deaths, update explosion damage and effects, and implement multi-weapon inventory for the player." />
     <MESSAGE value="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes." />
     <MESSAGE value="Remove unused visual effect classes and refactor item sprite handling: delete `MuzzleFlash`, `BulletImpact`, and `BloodSplatter` classes; implement `_load_sprite` methods for `HealthPack`, `AmmoPack`, `Powerup`, and `WeaponPickup` with scaling; adjust game state to center player and utilize `GameUI` for HUD rendering." />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove unused visual effect classes and refactor item sprite handling: delete `MuzzleFlash`, `BulletImpact`, and `BloodSplatter` classes; implement `_load_sprite` methods for `HealthPack`, `AmmoPack`, `Powerup`, and `WeaponPickup` with scaling; adjust game state to center player and utilize `GameUI` for HUD rendering." />
+    <MESSAGE value="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems." />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/game/game_state.py</url>
-          <line>332</line>
+          <line>529</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750001772400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750003754642" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

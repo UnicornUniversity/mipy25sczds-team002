@@ -1,7 +1,7 @@
 import random
 import math
 from entities.zombies import Zombie
-from systems.collisions import check_zombie_collisions
+from systems import collisions
 from utils.constants import (
     TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT,
     INITIAL_MAX_ZOMBIES, MAX_ZOMBIES_CAP, ZOMBIE_SPAWN_RATE_INITIAL,
@@ -84,7 +84,7 @@ class EnemySpawner:
             zombie.update(dt, player_x, player_y, self.map_generator)
 
             # Resolve zombie-zombie collisions
-            new_x, new_y = check_zombie_collisions(zombie, self.zombies)
+            new_x, new_y = collisions.check_zombie_collisions(zombie, self.zombies)
             zombie.x = new_x
             zombie.y = new_y
 

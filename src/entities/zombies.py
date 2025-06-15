@@ -251,19 +251,24 @@ class Zombie(Entity):
                 (self.y - self.last_position[1]) ** 2
             )
 
-            # Check if zombie is trying to move towards player but not moving much
+            # Check distance to player
             distance_to_player = math.sqrt((self.x - player_x) ** 2 + (self.y - player_y) ** 2)
+
+            # ONLY allow teleportation if zombie is FAR from player (off-screen)
+            is_far_from_player = distance_to_player > 500  # More than 500px from player
+
+            # Check if zombie is trying to move towards player but not moving much
             should_be_moving = distance_to_player > 50  # Should move if more than 50 pixels away
 
-            if should_be_moving and distance_moved < ZOMBIE_MIN_MOVEMENT_DISTANCE:
-                # Zombie should be moving but isn't - increment stuck counter
+            if should_be_moving and distance_moved < ZOMBIE_MIN_MOVEMENT_DISTANCE and is_far_from_player:
+                # Zombie should be moving but isn't AND is far from player - increment stuck counter
                 self.stuck_counter += self.stuck_check_interval
 
                 # Shorter timeout for faster teleportation
                 if self.stuck_counter >= 1.0:  # Only 1 second instead of 2
                     return True  # Trigger teleportation
             else:
-                # Zombie is moving or doesn't need to move - reset stuck counter
+                # Zombie is moving or doesn't need to move OR is too close to player - reset stuck counter
                 self.stuck_counter = 0
 
             # Update position tracking

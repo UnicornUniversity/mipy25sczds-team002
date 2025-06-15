@@ -51,6 +51,7 @@ class MenuState(GameState):
 
         self.subtitle_font = pygame.font.Font(None, 36)
         self.subtitle_text = self.subtitle_font.render("Press SPACE to Start", True, WHITE)
+        self.highscores_text = self.subtitle_font.render("Press H for High Scores", True, WHITE)
 
         self.info_font = pygame.font.Font(None, 24)
 
@@ -72,6 +73,10 @@ class MenuState(GameState):
                 # Stop menu music before switching to gameplay
                 music_manager.stop_music()
                 return "gameplay"
+
+            elif event.key == pygame.K_h:
+                # Show high scores
+                return "high_scores"
 
             elif event.key == pygame.K_m:
                 # Toggle music
@@ -95,12 +100,16 @@ class MenuState(GameState):
         screen.fill(BLACK)
 
         # Title
-        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 100))
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 120))
         screen.blit(self.title_text, title_rect)
 
         # Subtitle
-        subtitle_rect = self.subtitle_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+        subtitle_rect = self.subtitle_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 20))
         screen.blit(self.subtitle_text, subtitle_rect)
+
+        # High scores option
+        highscores_rect = self.highscores_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))
+        screen.blit(self.highscores_text, highscores_rect)
 
         # Controls
         controls = [
@@ -130,7 +139,6 @@ class MenuState(GameState):
         fps_text = self.info_font.render(f"FPS: {int(fps)}", True, WHITE)
         screen.blit(fps_text, (10, 10))
 
-
 class GameplayState(GameState):
     """Main gameplay state with proper collision and animation systems"""
 
@@ -157,6 +165,7 @@ class GameplayState(GameState):
         self.bullets = []
 
         self.camera_y = 0
+        self.camera_x = 0
 
         # Game state
         self.paused = False
@@ -173,7 +182,7 @@ class GameplayState(GameState):
         if self.paused:
             return
 
-            # Update UI system
+        # Update UI system
         self.ui.update(dt)
 
         # Start gameplay music
@@ -196,13 +205,19 @@ class GameplayState(GameState):
 
         self._handle_bullet_update(dt)
         self._update_camera()
-        self._check_collisions()
+
+        # Check collisions and handle game over
+        result = self._check_collisions()
+        if result == "game_over":
+            return "game_over"
+
+        return None  # Added explicit return None
 
     def handle_event(self, event):
         """Handle gameplay events"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                return "pause"
+                return "menu"  # Changed from "pause" to "menu"
             elif event.key == pygame.K_r:
                 self.player.reload()
             elif event.key == pygame.K_q:
@@ -230,6 +245,7 @@ class GameplayState(GameState):
             self.player.update_aim(event.pos, camera_offset)
 
         return None
+
 
     def render(self, screen, fps=0):
         """Render gameplay"""
@@ -404,19 +420,20 @@ class GameplayState(GameState):
         """Check collisions between game entities using proper collision system"""
         zombies = self.enemy_system.get_zombies()
 
-        # Check zombie-player collisions using entity collision detection
         for zombie in zombies:
             if check_entity_collision(self.player, zombie):
-                if zombie.attack(self.player):
-                    # Add blood splatter when player is hit
-                    animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
+                # Zombie attacks player
+                zombie.attack(self.player)
+                animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
 
-                    if self.player.is_dead():
-                        return "game_over"
+                if self.player.is_dead():
+                    return "game_over"
 
         picked_items = self.item_spawner.check_pickups(self.player)
         for item in picked_items:
             animation_system.add_effect('explosion', item.x, item.y, 0.5, size=0.5)
+
+        return None
 
     def _render_ui(self, screen, fps):
         """Render game UI using GameUI system"""
@@ -549,7 +566,7 @@ class PauseState(GameState):
 
 
 class GameOverState(GameState):
-    """Game over state"""
+    """Game over state with name input"""
 
     def __init__(self, score=0):
         """Initialize game over state"""
@@ -558,37 +575,205 @@ class GameOverState(GameState):
         self.title_text = self.font.render("GAME OVER", True, RED)
 
         self.subtitle_font = pygame.font.Font(None, 36)
-        self.score_text = self.subtitle_font.render(f"Score: {score}", True, WHITE)
-        self.restart_text = self.subtitle_font.render("Press SPACE to Restart", True, WHITE)
+        self.input_font = pygame.font.Font(None, 32)
+        self.score_text = self.subtitle_font.render(f"Final Score: {score}", True, WHITE)
+
+        # Name input
+        self.player_name = ""
+        self.input_active = True
+        self.cursor_visible = True
+        self.cursor_timer = 0
+
+        # Instructions
+        self.name_prompt = self.subtitle_font.render("Enter your name:", True, WHITE)
+        self.restart_text = self.input_font.render("Press ENTER to save, ESC for menu", True, GRAY)
 
     def update(self, dt):
         """Update game over state"""
-        pass
+        # Cursor blinking
+        self.cursor_timer += dt
+        if self.cursor_timer >= 0.5:
+            self.cursor_visible = not self.cursor_visible
+            self.cursor_timer = 0
 
     def handle_event(self, event):
         """Handle game over events"""
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                return "gameplay"
-            elif event.key == pygame.K_ESCAPE:
+            if event.key == pygame.K_ESCAPE:
                 return "menu"
+            elif event.key == pygame.K_RETURN:
+                # Save score with name and go to menu
+                self._save_score()
+                return "menu"
+            elif event.key == pygame.K_BACKSPACE and self.input_active:
+                # Remove last character
+                self.player_name = self.player_name[:-1]
+            elif event.key == pygame.K_SPACE and self.input_active:
+                # Add space
+                if len(self.player_name) < 20:
+                    self.player_name += " "
+
+        elif event.type == pygame.TEXTINPUT and self.input_active:
+            # Add typed character
+            if len(self.player_name) < 20 and event.text.isprintable():
+                self.player_name += event.text
+
         return None
+
+    def _save_score(self):
+        """Save score to file"""
+        import json
+        import os
+        from datetime import datetime
+
+        try:
+            # Load existing scores
+            try:
+                with open("high_scores.json", "r") as f:
+                    scores = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                scores = []
+
+            # Add new score
+            new_score = {
+                "name": self.player_name.strip() if self.player_name.strip() else "Unknown",
+                "score": self.score,
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+            }
+            scores.append(new_score)
+
+            # Sort by score and keep top 10
+            scores.sort(key=lambda x: x["score"], reverse=True)
+            scores = scores[:10]
+
+            # Save to file
+            with open("high_scores.json", "w") as f:
+                json.dump(scores, f, indent=2)
+
+            print(f"Score saved: {new_score}")
+        except Exception as e:
+            print(f"Error saving score: {e}")
 
     def render(self, screen, fps=0):
         """Render game over screen"""
         screen.fill(BLACK)
 
         # Title
-        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 100))
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 150))
         screen.blit(self.title_text, title_rect)
 
         # Score
-        score_rect = self.score_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+        score_rect = self.score_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 80))
         screen.blit(self.score_text, score_rect)
 
-        # Restart instruction
-        restart_rect = self.restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50))
+        # Name prompt
+        prompt_rect = self.name_prompt.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 20))
+        screen.blit(self.name_prompt, prompt_rect)
+
+        # Name input field - POUZE KURZOR BEZ OBDÉLNÍKU
+        input_text = self.player_name
+        if self.input_active and self.cursor_visible:
+            input_text += "|"
+
+        input_surface = self.input_font.render(input_text, True, WHITE)
+        input_rect = input_surface.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))
+
+        # Render just the text with cursor, no background rectangle
+        screen.blit(input_surface, input_rect)
+
+        # Instructions
+        restart_rect = self.restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80))
         screen.blit(self.restart_text, restart_rect)
+
+class HighScoresState(GameState):
+    """High scores display state"""
+
+    def __init__(self):
+        """Initialize high scores state"""
+        self.font = pygame.font.Font(None, 74)
+        self.title_text = self.font.render("HIGH SCORES", True, WHITE)
+
+        self.subtitle_font = pygame.font.Font(None, 36)
+        self.score_font = pygame.font.Font(None, 28)
+        self.info_font = pygame.font.Font(None, 24)
+
+        self.back_text = self.info_font.render("Press ESC to return to menu", True, GRAY)
+
+        # Load high scores
+        self.high_scores = self._load_high_scores()
+
+    def _load_high_scores(self):
+        """Load high scores from file"""
+        import json
+        try:
+            with open("high_scores.json", "r") as f:
+                scores = json.load(f)
+                return scores[:10]  # Top 10 scores
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []  # Return empty list if file doesn't exist or is corrupted
+
+    def update(self, dt):
+        """Update high scores state"""
+        pass
+
+    def handle_event(self, event):
+        """Handle high scores events"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return "menu"
+        return None
+
+    def render(self, screen, fps=0):
+        """Render high scores"""
+        screen.fill(BLACK)
+
+        # Title
+        title_rect = self.title_text.get_rect(center=(WINDOW_WIDTH // 2, 80))
+        screen.blit(self.title_text, title_rect)
+
+        # High scores list
+        if self.high_scores:
+            y_offset = 160
+            for i, score_entry in enumerate(self.high_scores):
+                rank = i + 1
+                name = score_entry.get("name", "Unknown")
+                score = score_entry.get("score", 0)
+                date = score_entry.get("date", "")
+
+                # Rank and name
+                rank_text = f"{rank:2d}. {name[:15]:<15}"  # Limit name length and pad
+                rank_surface = self.score_font.render(rank_text, True, WHITE)
+
+                # Score
+                score_text = f"{score:>8,}"  # Right-align score with thousands separator
+                score_surface = self.score_font.render(score_text, True, YELLOW)
+
+                # Date (smaller)
+                date_surface = self.info_font.render(date, True, GRAY)
+
+                # Position elements
+                rank_rect = rank_surface.get_rect(left=WINDOW_WIDTH // 2 - 200, top=y_offset)
+                score_rect = score_surface.get_rect(left=WINDOW_WIDTH // 2 + 20, top=y_offset)
+                date_rect = date_surface.get_rect(left=WINDOW_WIDTH // 2 + 150, top=y_offset + 5)
+
+                screen.blit(rank_surface, rank_rect)
+                screen.blit(score_surface, score_rect)
+                screen.blit(date_surface, date_rect)
+
+                y_offset += 35
+        else:
+            # No scores yet
+            no_scores_text = self.subtitle_font.render("No high scores yet!", True, GRAY)
+            no_scores_rect = no_scores_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+            screen.blit(no_scores_text, no_scores_rect)
+
+        # Back instruction
+        back_rect = self.back_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT - 40))
+        screen.blit(self.back_text, back_rect)
+
+        # FPS counter
+        fps_text = self.info_font.render(f"FPS: {int(fps)}", True, WHITE)
+        screen.blit(fps_text, (10, 10))
 
 
 class GameStateManager:
@@ -599,8 +784,8 @@ class GameStateManager:
         self.states = {
             "menu": MenuState(),
             "gameplay": None,  # Will be created when needed
-            "pause": None,  # Will be created when needed
-            "game_over": None  # Will be created when needed
+            "game_over": None,  # Will be created when needed
+            "high_scores": None  # Will be created when needed
         }
         self.current_state = "menu"
         self.previous_state = None
@@ -615,7 +800,9 @@ class GameStateManager:
     def update(self, dt):
         """Update current state"""
         if self.current_state in self.states and self.states[self.current_state]:
-            self.states[self.current_state].update(dt)
+            result = self.states[self.current_state].update(dt)
+            if result == "game_over":
+                self._change_state("game_over")
 
     def render(self, screen, fps=0):
         """Render current state"""
@@ -630,11 +817,11 @@ class GameStateManager:
         # Create state instances as needed
         if new_state == "gameplay":
             self.states["gameplay"] = GameplayState()
-        elif new_state == "pause":
-            self.states["pause"] = PauseState()
         elif new_state == "game_over":
             # Get score from gameplay state if available
             score = 0
             if self.states["gameplay"]:
                 score = self.states["gameplay"].score
             self.states["game_over"] = GameOverState(score)
+        elif new_state == "high_scores":
+            self.states["high_scores"] = HighScoresState()

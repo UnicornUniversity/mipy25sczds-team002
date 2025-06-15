@@ -202,19 +202,20 @@ class CollisionSystem:
             dy = (zombie.y + zombie.height/2) - (other_zombie.y + other_zombie.height/2)
             distance = math.sqrt(dx * dx + dy * dy)
 
-            # If zombies are too close, push them apart
-            min_distance = ZOMBIE_COLLISION_RADIUS * 2
+            # If zombies are too close, push them apart - but GENTLY
+            min_distance = ZOMBIE_COLLISION_RADIUS
             if min_distance > distance > 0:  # Avoid division by zero
-                # Calculate push direction and force
+                # Calculate push direction and force - MUCH SMALLER FORCE
                 push_x = dx / distance
                 push_y = dy / distance
-                push_force = (min_distance - distance) * 0.5
+                push_force = (min_distance - distance)   # Reduced from 0.5 to 0.1
 
-                # Move zombie away from other zombie
+                # Move zombie away from other zombie - SMALLER MOVEMENT
                 new_x += push_x * push_force
                 new_y += push_y * push_force
 
         return new_x, new_y
+
 
 # Create a global instance for convenience
 collision_system = None
