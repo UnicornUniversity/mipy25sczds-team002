@@ -1,6 +1,6 @@
 import random
 from .item_types import (
-    ItemType, ItemRarity, Item, WeaponPickup, HealthPack, AmmoPack,
+    ItemType, ItemRarity, Item, WeaponPickup, HealthPack, InfiniteAmmoPack,
     Powerup, SpeedBoost, DamageBoost, HealthRegeneration, 
     Invincibility, RapidFire
 )
@@ -12,7 +12,7 @@ class ItemFactory:
     _basic_item_registry = {
         ItemType.WEAPON.value: WeaponPickup,
         ItemType.HEALTH.value: HealthPack,
-        ItemType.AMMO.value: AmmoPack,
+        ItemType.INFINITE_AMMO.value: InfiniteAmmoPack,
     }
 
     # Registry pro powerupy
@@ -27,7 +27,7 @@ class ItemFactory:
     # Spawn weights pro basic items (higher = more common)
     _basic_item_weights = {
         ItemType.HEALTH.value: 40,  # Most common
-        ItemType.AMMO.value: 30,
+        ItemType.INFINITE_AMMO.value: 30,
         ItemType.WEAPON.value: 20,  # Less common
     }
 
@@ -250,17 +250,17 @@ def create_health_pack(x: float, y: float, heal_amount=25):
     return ItemFactory.create_item(ItemType.HEALTH.value, x, y, heal_amount=heal_amount)
 
 
-def create_ammo_pack(x: float, y: float, ammo_amount=30):
-    """Convenience function to create ammo pack
+def create_infinite_ammo_pack(x: float, y: float, ammo_amount=30):
+    """Convenience function to create infinite ammo pack
 
     Args:
         x, y (float): Position
         ammo_amount (int): Amount of ammo to give
 
     Returns:
-        AmmoPack: Ammo pack item
+        InfiniteAmmoPack: Infinite ammo pack item
     """
-    return ItemFactory.create_item(ItemType.AMMO.value, x, y, ammo_amount=ammo_amount)
+    return ItemFactory.create_item(ItemType.INFINITE_AMMO.value, x, y, ammo_amount=ammo_amount)
 
 
 def create_weapon_pickup(x: float, y: float, weapon_type=None):

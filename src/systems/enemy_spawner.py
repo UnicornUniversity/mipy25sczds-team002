@@ -1,7 +1,7 @@
 import random
 import math
 from entities.zombies import Zombie
-from systems.collisions import check_zombie_collisions  # Přidat import
+from systems.collisions import check_zombie_collisions
 from utils.constants import (
     TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT,
     INITIAL_MAX_ZOMBIES, MAX_ZOMBIES_CAP, ZOMBIE_SPAWN_RATE_INITIAL,
@@ -79,8 +79,7 @@ class EnemySpawner:
                                           self.current_spawn_rate - ZOMBIE_SPAWN_RATE_DECREASE_AMOUNT)
             self.time_since_last_decrease = 0
 
-        # Update all zombies - předání map_generator a řešení kolizí mezi zombie
-        for zombie in self.zombies[:]:  # Use slice to avoid modification during iteration
+        for zombie in self.zombies[:]:
             # Normal movement update
             zombie.update(dt, player_x, player_y, self.map_generator)
 
@@ -148,8 +147,21 @@ class EnemySpawner:
 
             # Check if position is walkable
             if self.map_generator.is_walkable(spawn_x, spawn_y):
-                # Create temporary zombie to test collision
-                temp_zombie = Zombie(spawn_x, spawn_y)
+                # Determine zombie type based on weighted probability
+                # 60% normal, 20% fast, 20% tough
+                rand_value = random.random()
+
+                if rand_value < 0.6:  # 60% chance for normal zombie
+                    temp_zombie = Zombie(spawn_x, spawn_y)
+                    zombie_type = "weak"
+                elif rand_value < 0.8:  # 20% chance for fast zombie (0.6 to 0.8)
+                    from entities.zombies import FastZombie
+                    temp_zombie = FastZombie(spawn_x, spawn_y)
+                    zombie_type = "fast"
+                else:  # 20% chance for tough zombie (0.8 to 1.0)
+                    from entities.zombies import ToughZombie
+                    temp_zombie = ToughZombie(spawn_x, spawn_y)
+                    zombie_type = "tough"
 
                 # Check if there's enough space (no collision with other zombies)
                 collision_detected = False
@@ -166,4 +178,5 @@ class EnemySpawner:
                 # If no collision, spawn the zombie
                 if not collision_detected:
                     self.zombies.append(temp_zombie)
+                    print(f"Spawned {zombie_type} zombie! (Total: {len(self.zombies)})")
                     break

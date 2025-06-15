@@ -23,20 +23,26 @@ DARK_BROWN = (101, 67, 33)
 # Sizes
 PLAYER_SIZE = 32
 ENEMY_SIZE = 24
+TOUGH_ZOMBIE_SIZE = 32  # Bigger than regular zombies
+FAST_ZOMBIE_SIZE = 18  # Smaller than regular zombies
 ZOMBIE_COLLISION_RADIUS = 20  # Radius for zombie-zombie collision
 ZOMBIE_OBSTACLE_COLLISION_RADIUS = 16  # Radius for zombie-obstacle collision
 
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
-ZOMBIE_SPEED = 100
-TOUGH_ZOMBIE_SPEED = 70  # Slower than regular zombies
+ZOMBIE_SPEED_MIN = 80  # Minimum speed for weak zombies
+ZOMBIE_SPEED_MAX = 120  # Maximum speed for weak zombies
+TOUGH_ZOMBIE_SPEED_MIN = 50  # Minimum speed for tough zombies
+TOUGH_ZOMBIE_SPEED_MAX = 80  # Maximum speed for tough zombies
+FAST_ZOMBIE_SPEED_MIN = 160  # Minimum speed for fast zombies
+FAST_ZOMBIE_SPEED_MAX = 220  # Maximum speed for fast zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
 
 # Enemy Spawning
 INITIAL_MAX_ZOMBIES = 200  # Initial maximum number of zombies
 MAX_ZOMBIES_CAP = 200  # Maximum cap for zombies
 ZOMBIE_SPAWN_RATE_INITIAL = 4.0  # Initial spawn rate in seconds
-ZOMBIE_SPAWN_RATE_MIN = 1.0  # Minimum spawn rate in seconds
+ZOMBIE_SPAWN_RATE_MIN = 0.5  # Minimum spawn rate in seconds
 ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL = 10.0  # Time in seconds between spawn rate decreases
 ZOMBIE_SPAWN_RATE_DECREASE_AMOUNT = 0.3  # Amount to decrease spawn rate by each interval
 ZOMBIE_MAX_INCREASE_RATE = 30.0  # Time in seconds to increase max zombies
@@ -48,12 +54,19 @@ ZOMBIE_SPAWN_DISTANCE_MAX = 1.2  # Maximum spawn distance multiplier (relative t
 PLAYER_MAX_HEALTH = 100
 ZOMBIE_HEALTH = 30
 ZOMBIE_DAMAGE = 5
-TOUGH_ZOMBIE_HEALTH = 60  # Tougher than regular zombies
-TOUGH_ZOMBIE_DAMAGE = 10  # More damage than regular zombies
+ZOMBIE_SCORE = 10  # Score for killing weak zombie
+TOUGH_ZOMBIE_HEALTH = 100  # Much tougher than regular zombies
+TOUGH_ZOMBIE_DAMAGE = 20  # Much more damage than regular zombies
+TOUGH_ZOMBIE_SCORE = 30  # More score for killing tough zombie
+FAST_ZOMBIE_HEALTH = 15  # Less health than regular zombies
+FAST_ZOMBIE_DAMAGE = 3  # Less damage than regular zombies
+FAST_ZOMBIE_SCORE = 20  # More score for killing fast zombie
 ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
 ZOMBIE_ATTACK_RANGE = 30  # Distance at which zombie can attack player
 ZOMBIE_ATTACK_DURATION = 0.3  # Duration of attack animation
 ZOMBIE_ATTACK_KNOCKBACK = 50  # How far to knock back player when hit
+ZOMBIE_STUCK_TIMEOUT = 2.0  # seconds before respawn
+ZOMBIE_MIN_MOVEMENT_DISTANCE = 5  # pixels to consider "moving"
 
 # Camera
 CAMERA_LERP = 0.1  # Camera smoothing factor (0-1)
@@ -66,6 +79,7 @@ EDGE_THICKNESS = 5  # thickness of forest edge in tiles
 MIN_BUILDINGS = 4  # Minimum number of buildings to generate
 MAX_BUILDINGS = 7  # Maximum number of buildings to generate
 RANDOM_OBJECT_DENSITY = 0.03  # Probability of placing a random object (was 0.05)
+
 
 # Sprites
 SPRITE_SIZE = 64  # Size of each sprite (64x64)

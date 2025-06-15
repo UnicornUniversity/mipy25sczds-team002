@@ -10,6 +10,7 @@ import pygame
 import math
 from abc import ABC, abstractmethod
 
+from entities.zombies import FastZombie
 from systems import collisions
 from utils.constants import *
 from systems.audio import music_manager
@@ -211,8 +212,13 @@ class GameplayState(GameState):
             elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
                 slot = event.key - pygame.K_1
                 self.player.switch_weapon(slot)
+            elif event.key == pygame.K_F2:
+                self._spawn_all_item_types()  # Debug: Spawn all item types in front of player
             elif event.key == pygame.K_F3:
                 self.show_debug = not self.show_debug
+            elif event.key == pygame.K_F4:
+                self._spawn_debug_zombie()  # Debug: Spawn zombie near player
+
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
@@ -273,7 +279,8 @@ class GameplayState(GameState):
 
                     if zombie.take_damage(bullet.damage):
                         self.enemy_system.zombies.remove(zombie)
-                        self.score += 10
+                        # Use zombie-specific score value
+                        self.score += zombie.get_score_value()
                     hit_zombie = zombie
                     break
 
@@ -350,6 +357,49 @@ class GameplayState(GameState):
             # No zombie hit, add bullet impact
             animation_system.add_effect('bullet_impact', hit_x, hit_y, 0.3)
 
+    def _spawn_debug_zombie(self):
+        """Debug function to spawn a random zombie near the player"""
+        import random
+        from entities.zombies import Zombie, ToughZombie
+
+        # Random choice between weak and tough zombie
+        zombie_types = [
+            ("weak", Zombie),
+            ("tough", ToughZombie),
+            ("fast", FastZombie)
+        ]
+
+        zombie_type_name, zombie_class = random.choice(zombie_types)
+
+        # Calculate spawn position near player (but not too close)
+        spawn_distance = 150  # Distance from player
+        angle = random.uniform(0, 2 * math.pi)  # Random angle
+
+        spawn_x = self.player.x + spawn_distance * math.cos(angle)
+        spawn_y = self.player.y + spawn_distance * math.sin(angle)
+
+        # Ensure spawn position is within map bounds
+        map_width = MAP_WIDTH * TILE_SIZE
+        map_height = MAP_HEIGHT * TILE_SIZE
+        spawn_x = max(50, min(spawn_x, map_width - 50))
+        spawn_y = max(50, min(spawn_y, map_height - 50))
+
+        # Create and add the zombie
+        new_zombie = zombie_class(spawn_x, spawn_y)
+        self.enemy_system.zombies.append(new_zombie)
+
+        # Show notification
+        message = f"Spawned {zombie_type_name} zombie! (Total: {len(self.enemy_system.zombies)})"
+        print(message)  # Console output
+
+        # UI notification if available
+        if self.ui:
+            self.ui.show_info_message(message, 2.0)
+
+        # Visual effect at spawn location
+        from systems.animation import animation_system
+        animation_system.add_effect('explosion', spawn_x, spawn_y, 0.3, size=0.3)
+
     def _check_collisions(self):
         """Check collisions between game entities using proper collision system"""
         zombies = self.enemy_system.get_zombies()
@@ -419,7 +469,42 @@ class GameplayState(GameState):
 
                 if zombie.take_damage(actual_damage):
                     self.enemy_system.zombies.remove(zombie)
-                    self.score += 15  # Bonus for explosive kills
+                    # Use zombie-specific score value with bonus for explosive kills
+                    self.score += zombie.get_score_value() + 5  # +5 bonus for explosive kills
+
+
+    def _spawn_all_item_types(self):
+        """Debug function to spawn all item types in front of the player"""
+        from systems.items.item_factory import ItemFactory
+
+        # Get all item types
+        basic_items = ItemFactory.get_basic_item_types()
+        powerup_types = ItemFactory.get_powerup_types()
+        all_item_types = basic_items + powerup_types
+
+        player_x, player_y = self.player.x, self.player.y
+        aim_angle = self.player.aim_angle
+
+        radius = 100  # Distance from player
+        item_count = len(all_item_types)
+        angle_step = math.pi / (item_count + 1)  # Distribute items in a semi-circle
+        for i, item_type in enumerate(all_item_types):
+            angle = aim_angle - math.pi/2 + angle_step * (i + 1)
+            x = player_x + radius * math.cos(angle)
+            y = player_y + radius * math.sin(angle)
+
+            if item_type == "weapon":
+                # Spawn one of each weapon type
+                for weapon_type in ItemFactory._weapon_types:
+                    weapon_angle = angle + (0.1 * (ItemFactory._weapon_types.index(weapon_type) - len(ItemFactory._weapon_types)/2))
+                    weapon_x = player_x + (radius + 30) * math.cos(weapon_angle)
+                    weapon_y = player_y + (radius + 30) * math.sin(weapon_angle)
+                    self.item_spawner.spawn_weapon(weapon_type, (weapon_x, weapon_y))
+            else:
+                self.item_spawner.spawn_specific_item(item_type, (x, y))
+
+        if self.ui:
+            self.ui.show_info_message("Spawned all item types", 3.0)
 
 
 class PauseState(GameState):

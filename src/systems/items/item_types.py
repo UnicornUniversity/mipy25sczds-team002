@@ -16,7 +16,7 @@ class ItemType(Enum):
     """Enum pro typy itemů"""
     WEAPON = "weapon"
     HEALTH = "health"
-    AMMO = "ammo"
+    INFINITE_AMMO = "infinite_ammo"
     SPEED_BOOST = "speed_boost"
     DAMAGE_BOOST = "damage_boost"
     HEALTH_REGEN = "health_regen"
@@ -177,41 +177,46 @@ class HealthPack(Item):
         return False
 
 
-class AmmoPack(Item):
-    """Ammunition item"""
+class InfiniteAmmoPack(Item):
+    """Infinite ammunition item"""
 
-    def __init__(self, x, y, ammo_amount=30):
-        """Initialize ammo pack
+    def __init__(self, x, y, duration=15.0):
+        """Initialize infinite ammo pack
 
         Args:
             x, y (float): Position
-            ammo_amount (int): Amount of ammo to give
+            duration (float): Duration in seconds
         """
-        super().__init__(x, y, ItemType.AMMO, ItemRarity.COMMON)
-        self.ammo_amount = ammo_amount
+        super().__init__(x, y, ItemType.INFINITE_AMMO, ItemRarity.COMMON)
+        self.duration = duration
         self.color = BLUE
         self._load_sprite()
 
     def _load_sprite(self):
-        """Load ammo pack sprite"""
+        """Load infinite ammo pack sprite"""
         sprite = get_texture("pickups", "ammo")
         if sprite:
             # Resize to 32x32 to match collision rect
             self.sprite = pygame.transform.scale(sprite, (32, 32))
         else:
-            print("Warning: Could not load ammo pack sprite")
+            print("Warning: Could not load infinite ammo pack sprite")
             self.sprite = None
 
     def collect(self, player):
-        """Give ammo to player's current weapon"""
-        print("Collected ammo pack!")
+        """Give infinite ammo to player"""
+        print("Collected infinite ammo pack!")
         if not self.collected:
+            # Apply infinite ammo effect
+            from systems.items.item_effects import apply_item_effect
+            apply_item_effect(player, "infinite_ammo", self.duration, True)
+
+            # Also fill current weapon's ammo
             current_weapon = player.get_current_weapon()
-            if current_weapon and current_weapon.ammo < current_weapon.magazine_size:
-                current_weapon.ammo = min(current_weapon.magazine_size,
-                                        current_weapon.ammo + self.ammo_amount)
-                self.collected = True
-                return True
+            if current_weapon:
+                current_weapon.ammo = current_weapon.magazine_size
+
+            self.collected = True
+            return True
         return False
 
 
@@ -255,7 +260,7 @@ class Powerup(Item):
 
     def collect(self, player):
         """Apply powerup effect to player"""
-        print("Collected powerup!")
+        print(f"Collected {self.item_type.value} powerup!")
         if not self.collected:
             self.apply_effect(player)
             self.collected = True
@@ -265,6 +270,7 @@ class Powerup(Item):
     def apply_effect(self, player):
         """Apply the powerup effect - to be overridden"""
         pass
+
 
 
 class SpeedBoost(Powerup):
@@ -282,9 +288,20 @@ class SpeedBoost(Powerup):
         self.speed_multiplier = speed_multiplier
         self.color = YELLOW
 
+    def _load_sprite(self):
+        """Load speed boost sprite"""
+        sprite = get_texture("pickups", "more_speed")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load speed boost sprite")
+            self.sprite = None
+
     def apply_effect(self, player):
         """Apply speed boost to player"""
-        # Implementation would depend on player's effect system
+        from systems.items.item_effects import apply_item_effect
+        apply_item_effect(player, "speed_boost", self.duration, self.speed_multiplier)
         print(f"Speed boost applied! ({self.speed_multiplier}x for {self.duration}s)")
 
 
@@ -303,15 +320,27 @@ class DamageBoost(Powerup):
         self.damage_multiplier = damage_multiplier
         self.color = RED
 
+    def _load_sprite(self):
+        """Load damage boost sprite"""
+        sprite = get_texture("pickups", "more_damage")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load damage boost sprite")
+            self.sprite = None
+
     def apply_effect(self, player):
         """Apply damage boost to player"""
+        from systems.items.item_effects import apply_item_effect
+        apply_item_effect(player, "damage_boost", self.duration, self.damage_multiplier)
         print(f"Damage boost applied! ({self.damage_multiplier}x for {self.duration}s)")
 
 
 class HealthRegeneration(Powerup):
     """Health regeneration powerup"""
 
-    def __init__(self, x, y, regen_rate=5, duration=20.0):
+    def __init__(self, x, y, regen_rate=2, duration=20.0):
         """Initialize health regeneration
 
         Args:
@@ -323,8 +352,20 @@ class HealthRegeneration(Powerup):
         self.regen_rate = regen_rate
         self.color = GREEN
 
+    def _load_sprite(self):
+        """Load health regeneration sprite"""
+        sprite = get_texture("pickups", "regeneration")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load health regeneration sprite")
+            self.sprite = None
+
     def apply_effect(self, player):
         """Apply health regeneration to player"""
+        from systems.items.item_effects import apply_item_effect
+        apply_item_effect(player, "health_regen", self.duration, self.regen_rate)
         print(f"Health regeneration applied! ({self.regen_rate} HP/s for {self.duration}s)")
 
 
@@ -341,8 +382,20 @@ class Invincibility(Powerup):
         super().__init__(x, y, ItemType.INVINCIBILITY, duration, ItemRarity.LEGENDARY)
         self.color = PURPLE
 
+    def _load_sprite(self):
+        """Load invincibility sprite"""
+        sprite = get_texture("pickups", "invincibility")
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load invincibility sprite")
+            self.sprite = None
+
     def apply_effect(self, player):
         """Apply invincibility to player"""
+        from systems.items.item_effects import apply_item_effect
+        apply_item_effect(player, "invincibility", self.duration, True)
         print(f"Invincibility applied! ({self.duration}s)")
 
 
@@ -361,6 +414,18 @@ class RapidFire(Powerup):
         self.fire_rate_multiplier = fire_rate_multiplier
         self.color = BLUE
 
+    def _load_sprite(self):
+        """Load rapid fire sprite"""
+        sprite = get_texture("pickups", "ammo")  # Using ammo sprite for rapid fire
+        if sprite:
+            # Resize to 32x32 to match collision rect
+            self.sprite = pygame.transform.scale(sprite, (32, 32))
+        else:
+            print("Warning: Could not load rapid fire sprite")
+            self.sprite = None
+
     def apply_effect(self, player):
         """Apply rapid fire to player"""
+        from systems.items.item_effects import apply_item_effect
+        apply_item_effect(player, "rapid_fire", self.duration, self.fire_rate_multiplier)
         print(f"Rapid fire applied! ({self.fire_rate_multiplier}x for {self.duration}s)")

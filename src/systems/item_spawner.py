@@ -279,7 +279,16 @@ class ItemSpawner:
 
                     # Show pickup notification if UI is available
                     if self.ui:
-                        item_name = getattr(item, 'name', None) or getattr(item, 'item_type', 'Item')
+                        item_name = getattr(item, 'name', None)
+                        if not item_name:
+                            # Try to get a human-readable name from the item_type
+                            item_type = getattr(item, 'item_type', None)
+                            if hasattr(item_type, 'value'):  # It's an enum
+                                raw_name = item_type.value
+                                item_name = ' '.join(word.capitalize() for word in raw_name.split('_'))
+                            else:
+                                item_name = str(item_type) if item_type else 'Item'
+
                         self.ui.show_pickup_message(f"Picked up {item_name}")
 
         return picked_up_items

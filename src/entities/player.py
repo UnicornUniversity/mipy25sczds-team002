@@ -6,6 +6,7 @@ from utils.constants import (
     OBJECT_SPEED_MULTIPLIER, TILE_OBJECT
 )
 from systems.collisions import resolve_movement
+from systems.items.item_effects import EffectManager
 
 
 class Player(Entity):
@@ -23,6 +24,9 @@ class Player(Entity):
         self.speed = PLAYER_SPEED
         self.aim_angle = 0
         self.map_generator = None  # Will be set by game state
+
+        # Effect system
+        self.effect_manager = EffectManager()
 
         # === WEAPON INVENTORY SYSTEM ===
         from systems.weapons import WeaponInventory, WeaponFactory
@@ -95,6 +99,15 @@ class Player(Entity):
         if map_generator:
             self.map_generator = map_generator
 
+        # Update effect manager
+        self.effect_manager.update(dt)
+
+        # Apply health regeneration effect if active
+        if self.effect_manager.has_effect("health_regen"):
+            regen_rate = self.effect_manager.get_effect_value("health_regen", 0)
+            if regen_rate > 0:
+                self.heal(regen_rate * dt)  # Heal based on regen rate per second
+
         # Get current key states from pygame
         keys_pressed = pygame.key.get_pressed()
         self._handle_movement(dt, keys_pressed)
@@ -102,6 +115,16 @@ class Player(Entity):
         # Update current weapon
         current_weapon = self.weapon_inventory.get_current_weapon()
         if current_weapon:
+            # Apply rapid fire effect if active
+            fire_rate_multiplier = self.effect_manager.get_fire_rate_multiplier()
+            if fire_rate_multiplier != 1.0 and current_weapon.cooldown_timer > 0:
+                # Reduce cooldown timer based on fire rate multiplier
+                current_weapon.cooldown_timer -= dt * (fire_rate_multiplier - 1.0)
+
+            # Apply infinite ammo effect if active
+            if self.effect_manager.has_effect("infinite_ammo") and current_weapon.ammo < current_weapon.magazine_size:
+                current_weapon.ammo = current_weapon.magazine_size
+
             current_weapon.update(dt)
 
         # Update sprite state
@@ -136,7 +159,22 @@ class Player(Entity):
             # Pass player center position to weapon
             player_center_x = self.x + self.width / 2
             player_center_y = self.y + self.height / 2
-            return current_weapon.shoot(player_center_x, player_center_y, self.aim_angle)
+
+            # Get projectile(s) from weapon
+            projectiles = current_weapon.shoot(player_center_x, player_center_y, self.aim_angle)
+
+            # Apply damage boost if active
+            if projectiles and self.effect_manager.has_effect("damage_boost"):
+                damage_multiplier = self.effect_manager.get_damage_multiplier()
+
+                # Apply damage multiplier to each projectile
+                if isinstance(projectiles, list):
+                    for projectile in projectiles:
+                        projectile.damage = int(projectile.damage * damage_multiplier)
+                else:
+                    projectiles.damage = int(projectiles.damage * damage_multiplier)
+
+            return projectiles
         return None
 
     def reload(self):
@@ -196,6 +234,11 @@ class Player(Entity):
 
     def take_damage(self, damage):
         """Take damage"""
+        # Check for invincibility effect
+        if self.effect_manager.is_invincible():
+            return True  # No damage taken if invincible
+
+        # Apply damage multiplier if being damaged by a weapon with damage boost
         self.health = max(0, self.health - damage)
         return self.health > 0
 
@@ -234,6 +277,10 @@ class Player(Entity):
 
             # Calculate base speed
             base_speed = self.speed
+
+            # Apply speed boost effect if active
+            speed_multiplier = self.effect_manager.get_speed_multiplier()
+            base_speed *= speed_multiplier
 
             # Check if player is on an object and apply speed multiplier if needed
             if self.map_generator:

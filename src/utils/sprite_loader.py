@@ -271,7 +271,7 @@ class AssetManager:
     def _load_individual_sprites(self) -> None:
         """Load individual sprite files into the texture atlas."""
         # Define sprite categories to load
-        sprite_categories = ['weapon', 'survivor', 'zombie', 'items', 'effects', 'ui', 'pickups']
+        sprite_categories = ['weapon', 'survivor', 'zombie', 'pickups', 'sprites']
 
         for category in sprite_categories:
             folder_path = os.path.join(self.sprites_path, category)
@@ -316,9 +316,17 @@ class AssetManager:
         # Define fallback sprites with categories and names
         fallback_sprites = {
             ('player', 'idle'): (32, 32),
+            ('survivor', 'survivor1_stand'): (32, 32),
+            ('survivor', 'survivor1_gun'): (32, 32),
+            ('survivor', 'survivor1_hold'): (32, 32),
+            ('survivor', 'survivor1_machine'): (32, 32),
+            ('survivor', 'survivor1_reload'): (32, 32),
+            ('survivor', 'survivor1_silencer'): (32, 32),
             ('zombie', 'basic_1'): (24, 24),
             ('zombie', 'runner_1'): (20, 20),
             ('zombie', 'tank_1'): (40, 40),
+            ('zombie', 'zoimbie1_stand'): (32, 32),
+            ('zombie', 'zoimbie1_hold'): (32, 32),
             ('tile', 'grass'): (TILE_SIZE, TILE_SIZE),
             ('tile', 'tree'): (TILE_SIZE, TILE_SIZE),
             ('tile', 'wall_brick'): (TILE_SIZE, TILE_SIZE),

@@ -12,7 +12,7 @@ Main exports:
 - Item: Base item class
 - WeaponPickup: Weapon items that can be picked up
 - HealthPack: Health restoration items
-- AmmoPack: Ammunition items
+- InfiniteAmmoPack: Infinite ammunition items
 - Powerup: Base powerup class
 - SpeedBoost, DamageBoost, etc.: Specific powerups
 - ItemFactory: Factory for creating items
@@ -24,7 +24,7 @@ from .item_types import (
     Item,
     WeaponPickup,
     HealthPack,
-    AmmoPack,
+    InfiniteAmmoPack,
     Powerup,
     SpeedBoost,
     DamageBoost,
@@ -39,7 +39,7 @@ from .item_factory import (
     create_random_item,
     create_random_powerup,
     create_health_pack,
-    create_ammo_pack,
+    create_infinite_ammo_pack,
     create_weapon_pickup,
     create_powerup
 )
@@ -65,7 +65,7 @@ __all__ = [
     # Pickup items
     'WeaponPickup',
     'HealthPack',
-    'AmmoPack',
+    'InfiniteAmmoPack',
 
     # Powerups (only those that exist)
     'SpeedBoost',
@@ -79,7 +79,7 @@ __all__ = [
     'create_random_item',
     'create_random_powerup',
     'create_health_pack',
-    'create_ammo_pack',
+    'create_infinite_ammo_pack',
     'create_weapon_pickup',
     'create_powerup',
 
