@@ -4,13 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems.">
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions.">
+      <change afterPath="$PROJECT_DIR$/assets/sounds/music/menu.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/pistol.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/shot-rifle-39-mm-37542.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/shotgun.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/single-gunshot-52-80191.mp3" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/sounds/weapons/sniper.mp3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/collisions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/collisions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/enemy_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/enemy_spawner.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/music/menu/trance_boss_battle_bpm150.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/music/boss_trance.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/items/item_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +66,7 @@
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites",
+    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/sounds/weapons",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -74,13 +77,14 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\weapons" />
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\music" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\fonts" />
-      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\utils" />
-      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\src\systems" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\music" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\spritesheets" />
     </key>
   </component>
@@ -141,7 +145,7 @@
       <workItem from="1749917479841" duration="1833000" />
       <workItem from="1749974882267" duration="3000" />
       <workItem from="1749974895935" duration="16018000" />
-      <workItem from="1749991064275" duration="12343000" />
+      <workItem from="1749991064275" duration="13623000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -279,7 +283,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750001811079</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions.">
+      <option name="closed" value="true" />
+      <created>1750003877231</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1750003877231</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -314,7 +326,8 @@
     <MESSAGE value="Refactor items and weapons system: remove legacy `items.py` and `weapons.py`, introduce `item_types.py` for centralized item definitions, use `ItemType` and `ItemRarity` enums, and streamline item behavior with new base classes." />
     <MESSAGE value="Remove unused visual effect classes and refactor item sprite handling: delete `MuzzleFlash`, `BulletImpact`, and `BloodSplatter` classes; implement `_load_sprite` methods for `HealthPack`, `AmmoPack`, `Powerup`, and `WeaponPickup` with scaling; adjust game state to center player and utilize `GameUI` for HUD rendering." />
     <MESSAGE value="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems." />
-    <option name="LAST_COMMIT_MESSAGE" value="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems." />
+    <MESSAGE value="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions." />
+    <option name="LAST_COMMIT_MESSAGE" value="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -328,6 +341,6 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750003754642" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750004250916" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

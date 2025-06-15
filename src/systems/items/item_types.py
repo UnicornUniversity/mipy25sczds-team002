@@ -103,6 +103,7 @@ class Item:
         """Check if item has been collected"""
         return self.collected
 
+
 class WeaponPickup(Item):
     """Weapon pickup item"""
 
@@ -121,23 +122,40 @@ class WeaponPickup(Item):
 
     def _load_sprite(self):
         """Load weapon sprite"""
-        sprite = get_texture("weapon", self.weapon_type)
+        from utils.sprite_loader import get_texture
+
+        # Map weapon types to sprite names
+        sprite_mapping = {
+            "pistol": "pistol",
+            "shotgun": "shotgun",
+            "assault_rifle": "assault_rifle",
+            "sniper_rifle": "sniper_rifle",
+            "bazooka": "explosives"  # Map bazooka to explosives sprite
+        }
+
+        sprite_name = sprite_mapping.get(self.weapon_type, self.weapon_type)
+        sprite = get_texture("weapon", sprite_name)
+
         if sprite:
             # Scale weapon sprite by a factor of 2 to make it larger on the game field
             original_width, original_height = sprite.get_size()
             self.sprite = pygame.transform.scale(sprite, (original_width * 2, original_height * 2))
         else:
             self.sprite = None
+            print(f"Warning: Could not load sprite for weapon type '{self.weapon_type}' (looking for '{sprite_name}')")
 
     def collect(self, player):
         """Give weapon to player"""
-        print("Collected weapon")
         if not self.collected:
             from systems.weapons import WeaponFactory
             weapon = WeaponFactory.create_weapon(self.weapon_type)
             if weapon and player.add_weapon(weapon):
                 self.collected = True
+                print(f"Collected {self.weapon_type}!")  # More specific message
                 return True
+            else:
+                # Weapon inventory might be full or weapon creation failed
+                return False
         return False
 
 
