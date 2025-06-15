@@ -37,6 +37,11 @@ class Player(Entity):
 
         # Direction tracking for sprite flipping
         self.facing_left = False  # True if facing left, False if facing right
+        
+        # Footstep sound tracking
+        self.footstep_timer = 0
+        self.footstep_interval = 0.4  # Přehraje footstep každých 400ms při chůzi
+        self.last_footstep_type = 0  # Pro střídání různých footstep zvuků
 
     def update(self, dt, map_generator=None):
         """Update player state based on input
@@ -110,8 +115,19 @@ class Player(Entity):
         # Update animation time
         if self.is_moving:
             self.animation_time += dt
+            
+            # Footstep sounds when moving
+            self.footstep_timer += dt
+            if self.footstep_timer >= self.footstep_interval:
+                self.footstep_timer = 0
+                # Střídej footstep zvuky pro variabilitu
+                footstep_sounds = ["player_footstep", "player_footstep2", "player_footstep3"]
+                footstep_sound = footstep_sounds[self.last_footstep_type % len(footstep_sounds)]
+                play_sound(footstep_sound, volume=0.3)
+                self.last_footstep_type += 1
         else:
             self.animation_time = 0
+            self.footstep_timer = 0
 
         # Boundary checking to prevent player from leaving the map
         map_width_px = MAP_WIDTH * TILE_SIZE
