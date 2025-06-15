@@ -4,14 +4,22 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings.">
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Integrate centralized collision system: replace entity-specific collision checks with unified `collisions` module, enhance zombie and player movement with collision resolution, implement zombie item drops, and update map walkability logic.">
+      <change afterPath="$PROJECT_DIR$/src/systems/enemy_spawner.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/systems/item_spawner.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/entities/items.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/items.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/game/map_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/map_generator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/game/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/audio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/collisions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/collisions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/effects.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/effects.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/ui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/weapons.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/weapons.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/systems/zombie_spawner.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/enemy_system.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,25 +61,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/alois/PycharmProjects/mipy25sczds-team002/assets/images/sprites/weapon&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
@@ -139,6 +147,8 @@
       <workItem from="1749916876064" duration="168000" />
       <workItem from="1749917055824" duration="411000" />
       <workItem from="1749917479841" duration="1833000" />
+      <workItem from="1749974882267" duration="3000" />
+      <workItem from="1749974895935" duration="4964000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -236,7 +246,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749917961480</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Integrate centralized collision system: replace entity-specific collision checks with unified `collisions` module, enhance zombie and player movement with collision resolution, implement zombie item drops, and update map walkability logic.">
+      <option name="closed" value="true" />
+      <created>1749920812180</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1749920812180</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -266,9 +284,10 @@
     <MESSAGE value="Enhance rendering and gameplay systems: implement sprite-based rendering fallback for items and zombies, integrate texture atlas for efficient sprite management, refine tile generation with dynamic sprite selection, and add directional zombie rendering with rotation and tinting." />
     <MESSAGE value="Update bullet collision logic and zombie movement mechanics: modify `is_bullet_passable()` check for map collisions, update zombie movement to adjust for objects with speed multiplier, and refine rendering for zombies on objects with transparency." />
     <MESSAGE value="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings." />
-    <option name="LAST_COMMIT_MESSAGE" value="Update zombie collision logic and IDE settings: adjust zombie collision check to use `zombie_spawner.get_zombies()` and configure IDE for Python 3.11 with additional documentation and formatting settings." />
+    <MESSAGE value="Integrate centralized collision system: replace entity-specific collision checks with unified `collisions` module, enhance zombie and player movement with collision resolution, implement zombie item drops, and update map walkability logic." />
+    <option name="LAST_COMMIT_MESSAGE" value="Integrate centralized collision system: replace entity-specific collision checks with unified `collisions` module, enhance zombie and player movement with collision resolution, implement zombie item drops, and update map walkability logic." />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749920384655" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1749979899579" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>

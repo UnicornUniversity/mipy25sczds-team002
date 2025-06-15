@@ -7,7 +7,7 @@ from entities.items import Item, HealthPack, Weapon, Powerup
 from game.map_generator import MapGenerator
 from systems.audio import play_menu_music, play_gameplay_music, stop_music, toggle_music, toggle_sfx, set_music_volume, set_sfx_volume
 from systems.effects import MuzzleFlash, BulletImpact, BloodSplatter
-from systems.zombie_spawner import ZombieSpawner
+from systems.enemy_spawner import EnemySpawner
 from systems import collisions
 from utils.constants import (
     WINDOW_WIDTH, WINDOW_HEIGHT, TILE_SIZE,
@@ -17,81 +17,6 @@ from utils.constants import (
     ZOMBIE_COLLISION_RADIUS
 )
 from utils.sprite_loader import get_asset_info
-
-
-# Simple effect classes to replace missing systems.effects
-class MuzzleFlash:
-    """Simple muzzle flash effect"""
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.lifetime = 0.1  # Very short flash
-        self.age = 0
-
-    def update(self, dt):
-        self.age += dt
-        return self.age < self.lifetime
-
-    def render(self, screen, camera_offset):
-        if self.age < self.lifetime:
-            # Simple yellow circle for muzzle flash
-            screen_x = int(self.x - camera_offset[0])
-            screen_y = int(self.y - camera_offset[1])
-            radius = int(8 * (1 - self.age / self.lifetime))  # Shrinking
-            if radius > 0:
-                pygame.draw.circle(screen, (255, 255, 0), (screen_x, screen_y), radius)
-
-
-class BulletImpact:
-    """Simple bullet impact effect"""
-    def __init__(self, x, y, color=(255, 255, 255)):
-        self.x = x
-        self.y = y
-        self.color = color
-        self.lifetime = 0.2
-        self.age = 0
-
-    def update(self, dt):
-        self.age += dt
-        return self.age < self.lifetime
-
-    def render(self, screen, camera_offset):
-        if self.age < self.lifetime:
-            # Simple spark effect
-            screen_x = int(self.x - camera_offset[0])
-            screen_y = int(self.y - camera_offset[1])
-            alpha = int(255 * (1 - self.age / self.lifetime))
-            color_with_alpha = (*self.color, alpha)
-
-            # Draw small cross for impact
-            pygame.draw.line(screen, self.color, (screen_x-3, screen_y), (screen_x+3, screen_y), 2)
-            pygame.draw.line(screen, self.color, (screen_x, screen_y-3), (screen_x, screen_y+3), 2)
-
-
-class BloodSplatter:
-    """Simple blood splatter effect"""
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.lifetime = 0.5
-        self.age = 0
-
-    def update(self, dt):
-        self.age += dt
-        return self.age < self.lifetime
-
-    def render(self, screen, camera_offset):
-        if self.age < self.lifetime:
-            # Simple red circle for blood
-            screen_x = int(self.x - camera_offset[0])
-            screen_y = int(self.y - camera_offset[1])
-            alpha = int(255 * (1 - self.age / self.lifetime))
-            radius = int(4 + 2 * (self.age / self.lifetime))  # Growing
-
-            # Create surface with alpha for transparency
-            blood_surface = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)
-            pygame.draw.circle(blood_surface, (150, 0, 0, alpha), (radius, radius), radius)
-            screen.blit(blood_surface, (screen_x - radius, screen_y - radius))
 
 
 class GameState:
@@ -220,15 +145,13 @@ class GameplayState(GameState):
         self.camera_x = 0
         self.camera_y = 0
 
-        # Create zombie spawner
-        self.zombie_spawner = ZombieSpawner(self.map_generator)
+        from systems.item_spawner import ItemSpawner
+        self.item_spawner = ItemSpawner(self.map_generator)
+        self.items = self.item_spawner.get_items()
+        self.item_spawner.initialize_weapon_sequence()
 
-        # Create a list to store items
-        self.items = []
-
-        # Initialize weapons list
-        self.weapons = []
-        self._spawn_random_weapons(5)  # Spawn 5 random weapons
+        # Create enemy system
+        self.enemy_system = EnemySpawner(self.map_generator)
 
         # Create a list to store bullets
         self.bullets = []
@@ -249,9 +172,6 @@ class GameplayState(GameState):
 
         # Music state
         self.gameplay_music_started = False
-
-        # Weapon spawn timer
-        self.weapon_spawn_timer = 60.0  # Spawn a new weapon every 60 seconds
 
     def _find_walkable_position(self, center_x, center_y):
         """Find a walkable position near the specified center coordinates"""
@@ -303,100 +223,7 @@ class GameplayState(GameState):
                     self.zombies.append(Zombie(x, y))
                 break
 
-    def _spawn_random_weapons(self, count=5):
-        """Spawn random weapons around the map
-
-        Args:
-            count (int): Number of weapons to spawn
-        """
-        # Spawn the specified number of weapons
-        for _ in range(count):
-            # Find a random walkable position on the map
-            self._spawn_random_item()
-
-    def _spawn_random_item(self, near_player=False, weapon_type=None, position=None):
-        """Spawn a random item at a random position on the map or at a specific position
-
-        Args:
-            near_player (bool): Whether to spawn the item near the player
-            weapon_type (str, optional): Specific weapon type to spawn
-            position (tuple, optional): Specific position (x, y) to spawn the item at
-
-        Returns:
-            Item: The spawned item, or None if no suitable position was found
-        """
-        # If a specific position is provided, use it directly
-        if position:
-            x, y = position
-            # Ensure position is within map bounds
-            x = max(0, min(x, MAP_WIDTH * TILE_SIZE - TILE_SIZE))
-            y = max(0, min(y, MAP_HEIGHT * TILE_SIZE - TILE_SIZE))
-
-            # Check if position is walkable
-            if self.map_generator.is_walkable(x, y):
-                # Create a random item at this position
-                item = Item.create_random_item(x, y, weapon_type)
-                self.items.append(item)
-                return item
-            return None
-
-        # Otherwise, calculate a random position
-        if near_player:
-            # Find a position within 10 tiles of the player
-            max_distance = 10 * TILE_SIZE
-            min_distance = 3 * TILE_SIZE
-            center_x = self.player.x
-            center_y = self.player.y
-        else:
-            # Find a position anywhere on the map
-            max_distance = min(MAP_WIDTH, MAP_HEIGHT) * TILE_SIZE / 2
-            min_distance = 0
-            # Use center of map as reference point
-            center_x = (MAP_WIDTH * TILE_SIZE) / 2
-            center_y = (MAP_HEIGHT * TILE_SIZE) / 2
-
-        # Try to find a walkable position for the item
-        for _ in range(50):  # Limit attempts to avoid infinite loop
-            # Random angle
-            angle = random.uniform(0, 2 * math.pi)
-            # Random distance
-            distance = random.uniform(min_distance, max_distance)
-
-            # Calculate position
-            x = center_x + distance * math.cos(angle)
-            y = center_y + distance * math.sin(angle)
-
-            # Ensure position is within map bounds
-            x = max(0, min(x, MAP_WIDTH * TILE_SIZE - TILE_SIZE))
-            y = max(0, min(y, MAP_HEIGHT * TILE_SIZE - TILE_SIZE))
-
-            # Check if position is walkable
-            if self.map_generator.is_walkable(x, y):
-                # Create a random item at this position
-                item = Item.create_random_item(x, y, weapon_type)
-                self.items.append(item)
-                return item
-
-        return None
-
-    def spawn_next_tier_weapon(self, current_weapon_type):
-        """Spawn a weapon of the next tier based on the current weapon type
-
-        Args:
-            current_weapon_type (str): Current weapon type
-
-        Returns:
-            Item: The spawned weapon, or None if no suitable position was found or already at highest tier
-        """
-        # Get the next tier weapon type
-        from entities.items import Weapon
-        next_weapon_type = Weapon.get_next_tier_weapon(current_weapon_type)
-
-        # If there is a next tier, spawn it near the player
-        if next_weapon_type:
-            return self._spawn_random_item(near_player=True, weapon_type=next_weapon_type)
-
-        return None
+    # Weapon spawning is now handled by the drop_system
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
@@ -407,35 +234,33 @@ class GameplayState(GameState):
                 self.debug_mode = not self.debug_mode
             elif event.key == pygame.K_r:
                 # Reload weapon
-                if self.player.weapon:
-                    self.player.weapon.reload()
+                current_weapon = self.player.get_current_weapon()
+                if current_weapon:
+                    current_weapon.reload()
+            # Handle weapon switching with number keys 1-5
+            elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
+                slot = event.key - pygame.K_1
+                self.player.switch_weapon(slot)
             elif event.key == pygame.K_m:
-                # Toggle music
                 toggle_music()
             elif event.key == pygame.K_n:
-                # Toggle sound effects
                 toggle_sfx()
             elif event.key == pygame.K_LEFTBRACKET:
-                # Decrease music volume
                 from systems.audio import music_manager
                 current_volume = music_manager.music_volume
                 set_music_volume(max(0.0, current_volume - 0.1))
             elif event.key == pygame.K_RIGHTBRACKET:
-                # Increase music volume
                 from systems.audio import music_manager
                 current_volume = music_manager.music_volume
                 set_music_volume(min(1.0, current_volume + 0.1))
         elif event.type == pygame.MOUSEMOTION:
-            # Update player aim based on mouse position
             mouse_pos = pygame.mouse.get_pos()
             camera_offset = (int(self.camera_x), int(self.camera_y))
             self.player.update_aim(mouse_pos, camera_offset)
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left mouse button
-                # Set flag for continuous firing
+            if event.button == 1:
                 self.left_mouse_down = True
 
-                # Attempt to shoot immediately
                 result = self.player.shoot()
                 if result:
                     # Handle different return types from different weapons
@@ -464,11 +289,12 @@ class GameplayState(GameState):
         self.player.update(dt, self.map_generator)
 
         # Handle continuous firing for assault rifle
+        current_weapon = self.player.get_current_weapon()
         if (
             self.left_mouse_down and
-            self.player.weapon and
-            hasattr(self.player.weapon, 'name') and
-            self.player.weapon.name == "Assault Rifle"
+            current_weapon and
+            hasattr(current_weapon, 'name') and
+            current_weapon.name == "Assault Rifle"
         ):
             result = self.player.shoot()
             if result:
@@ -483,15 +309,15 @@ class GameplayState(GameState):
                 # Add muzzle flash effect
                 self._add_muzzle_flash_effect()
 
-        # Update zombie spawner
-        self.zombie_spawner.update(dt, self.player.x, self.player.y)
+        # Update enemy system
+        self.enemy_system.update(dt, self.player.x, self.player.y)
 
         # Update zombies with map_generator reference
-        for i, zombie in enumerate(self.zombie_spawner.get_zombies()):
+        for i, zombie in enumerate(self.enemy_system.get_zombies()):
             zombie.update(dt, self.player.x, self.player.y, self.map_generator)
 
             # Check for zombie-zombie collisions using the collision system
-            new_x, new_y = collisions.check_zombie_collisions(zombie, self.zombie_spawner.get_zombies())
+            new_x, new_y = collisions.check_zombie_collisions(zombie, self.enemy_system.get_zombies())
             zombie.x, zombie.y = new_x, new_y
 
             # Check for collision with player
@@ -513,28 +339,115 @@ class GameplayState(GameState):
 
             # Check if bullet has expired
             if bullet.is_expired():
-                # Add bullet impact effect when bullet expires
-                self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
+                # Handle explosion for explosive bullets (like bazooka rockets)
+                if hasattr(bullet, 'is_explosive') and bullet.is_explosive:
+                    explosion_info = bullet.explode()
+                    if isinstance(explosion_info, dict):
+                        # Extract explosion information
+                        explosion_pos = explosion_info.get('position', (bullet.x, bullet.y))
+                        explosion_radius = explosion_info.get('radius', 0)
+                        explosion_damage = explosion_info.get('damage', 0)
+
+                        # Add explosion effect
+                        self._add_explosion_effect(explosion_pos[0], explosion_pos[1], explosion_radius)
+
+                        # Apply damage to zombies within explosion radius
+                        for zombie in self.enemy_system.get_zombies():
+                            # Calculate distance from explosion to zombie
+                            dx = zombie.x + zombie.width/2 - explosion_pos[0]
+                            dy = zombie.y + zombie.height/2 - explosion_pos[1]
+                            distance = math.sqrt(dx * dx + dy * dy)
+
+                            # If zombie is within explosion radius, apply damage
+                            if distance <= explosion_radius:
+                                # Calculate damage falloff based on distance (full damage at center, less at edges)
+                                damage_multiplier = 1.0 - (distance / explosion_radius)
+                                damage = int(explosion_damage * damage_multiplier)
+
+                                # Apply damage to zombie
+                                zombie_died = zombie.take_damage(damage)
+
+                                # Add blood splatter effect
+                                self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
+
+                                # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
+                                if zombie_died:
+                                    self.enemy_system.remove_zombie(zombie)
+                                    self.item_spawner.spawn_zombie_drop((zombie.x, zombie.y))
+
+                else:
+                    # Add bullet impact effect for non-explosive bullets
+                    self._add_bullet_impact_effect(bullet.x, bullet.y, bullet.color)
+
                 bullets_to_remove.append(i)
                 continue
 
             # Check for collision with zombies
-            for j, zombie in enumerate(self.zombie_spawner.get_zombies()):
+            for j, zombie in enumerate(self.enemy_system.get_zombies()):
                 if self._check_collision(bullet, zombie):
-                    # Bullet hit zombie
-                    zombie_died = zombie.take_damage(bullet.damage)
+                    # Check if bullet is explosive (like bazooka rocket)
+                    if hasattr(bullet, 'is_explosive') and bullet.is_explosive:
+                        # Explosive bullet hit zombie - trigger explosion
+                        explosion_info = bullet.explode()
+                        if isinstance(explosion_info, dict):
+                            # Extract explosion information
+                            explosion_pos = explosion_info.get('position', (bullet.x, bullet.y))
+                            explosion_radius = explosion_info.get('radius', 0)
+                            explosion_damage = explosion_info.get('damage', 0)
 
-                    # Add blood splatter effect
-                    self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
+                            # Add explosion effect
+                            self._add_explosion_effect(explosion_pos[0], explosion_pos[1], explosion_radius)
 
-                    # If zombie died, remove it from the zombie spawner and possibly drop a weapon
-                    if zombie_died:
-                        self.zombie_spawner.remove_zombie(zombie)
+                            # Apply damage to zombies within explosion radius
+                            for explosion_zombie in self.enemy_system.get_zombies():
+                                # Calculate distance from explosion to zombie
+                                dx = explosion_zombie.x + explosion_zombie.width/2 - explosion_pos[0]
+                                dy = explosion_zombie.y + explosion_zombie.height/2 - explosion_pos[1]
+                                distance = math.sqrt(dx * dx + dy * dy)
 
-                        # Small chance (10%) for zombie to drop a weapon when it dies
-                        if random.random() < 0.1:  # 10% chance
-                            # Spawn a weapon at the zombie's position
-                            self._spawn_random_item(near_player=False, weapon_type=None, position=(zombie.x, zombie.y))
+                                # If zombie is within explosion radius, apply damage
+                                if distance <= explosion_radius:
+                                    # Calculate damage falloff based on distance (full damage at center, less at edges)
+                                    damage_multiplier = 1.0 - (distance / explosion_radius)
+                                    damage = int(explosion_damage * damage_multiplier)
+
+                                    # Apply damage to zombie
+                                    zombie_died = explosion_zombie.take_damage(damage)
+
+                                    # Add blood splatter effect
+                                    self._add_blood_splatter_effect(explosion_zombie.x + explosion_zombie.width // 2, explosion_zombie.y + explosion_zombie.height // 2)
+
+                                    # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
+                                    if zombie_died:
+                                        self.enemy_system.remove_zombie(explosion_zombie)
+
+                                        # Small chance (10%) for zombie to drop a health pack or powerup when it dies
+                                        if random.random() < 0.1:  # 10% chance
+                                            # Create a health pack or powerup at the zombie's position
+                                            if random.random() < 0.8:  # 80% chance for health pack
+                                                item = HealthPack(explosion_zombie.x, explosion_zombie.y)
+                                            else:  # 20% chance for powerup
+                                                item = Powerup(explosion_zombie.x, explosion_zombie.y)
+                                            self.items.append(item)
+                    else:
+                        # Regular bullet hit zombie
+                        zombie_died = zombie.take_damage(bullet.damage)
+
+                        # Add blood splatter effect
+                        self._add_blood_splatter_effect(zombie.x + zombie.width // 2, zombie.y + zombie.height // 2)
+
+                        # If zombie died, remove it from the enemy system and possibly drop a health pack or powerup
+                        if zombie_died:
+                            self.enemy_system.remove_zombie(zombie)
+
+                            # Small chance (10%) for zombie to drop a health pack or powerup when it dies
+                            if random.random() < 0.1:  # 10% chance
+                                # Create a health pack or powerup at the zombie's position
+                                if random.random() < 0.8:  # 80% chance for health pack
+                                    item = HealthPack(zombie.x, zombie.y)
+                                else:  # 20% chance for powerup
+                                    item = Powerup(zombie.x, zombie.y)
+                                self.items.append(item)
 
                     # Mark bullet for removal
                     bullets_to_remove.append(i)
@@ -555,10 +468,12 @@ class GameplayState(GameState):
         # Check for item pickups
         for item in self.items:
             if not item.picked_up and self._check_collision(item, self.player):
-                # Item is picked up by player
                 message = item.pickup(self.player)
                 self.pickup_message = message
                 self.pickup_timer = PICKUP_NOTIFICATION_DURATION
+
+                if isinstance(item, Weapon):
+                    self.item_spawner.weapon_picked_up(item.weapon_type)
 
         # Update pickup notification timer
         if self.pickup_timer > 0:
@@ -575,8 +490,8 @@ class GameplayState(GameState):
         # Remove finished effects
         self.effects = [e for i, e in enumerate(self.effects) if i not in effects_to_remove]
 
-        # Automatic weapon spawning is disabled
-        # Weapons are now dropped by zombies when they die
+        self.item_spawner.update(dt)
+        self.items = self.item_spawner.get_items()
 
         # Update camera position to follow player (with smoothing)
         target_camera_x = self.player.x - WINDOW_WIDTH // 2
@@ -621,7 +536,7 @@ class GameplayState(GameState):
             bullet.render(screen, camera_offset)
 
         # Draw zombies with camera offset
-        for zombie in self.zombie_spawner.get_zombies():
+        for zombie in self.enemy_system.get_zombies():
             zombie.render(screen, camera_offset)
 
         # Draw player with camera offset
@@ -664,7 +579,8 @@ class GameplayState(GameState):
 
     def _add_muzzle_flash_effect(self):
         """Add a muzzle flash effect at the player's weapon position"""
-        if not self.player.weapon:
+        current_weapon = self.player.get_current_weapon()
+        if not current_weapon:
             return
 
         # Calculate muzzle position (slightly in front of player in aim direction)
@@ -702,6 +618,54 @@ class GameplayState(GameState):
         splatter = BloodSplatter(x, y)
         self.effects.append(splatter)
 
+    def _add_explosion_effect(self, x, y, radius):
+        """Add an explosion effect at the specified position
+
+        Args:
+            x (float): X position
+            y (float): Y position
+            radius (float): Explosion radius
+        """
+        # Create a custom explosion effect class
+        class ExplosionEffect:
+            def __init__(self, x, y, radius):
+                self.x = x
+                self.y = y
+                self.radius = radius
+                self.lifetime = 0.5  # Duration of explosion effect in seconds
+                self.age = 0
+
+            def update(self, dt):
+                self.age += dt
+                return self.age < self.lifetime
+
+            def render(self, screen, camera_offset):
+                if self.age < self.lifetime:
+                    # Calculate screen position
+                    screen_x = int(self.x - camera_offset[0])
+                    screen_y = int(self.y - camera_offset[1])
+
+                    # Calculate current radius based on age (starts big, gets smaller)
+                    current_radius = int(self.radius * (1 - self.age / self.lifetime))
+
+                    # Calculate alpha (starts opaque, becomes transparent)
+                    alpha = int(200 * (1 - self.age / self.lifetime))
+
+                    # Create a surface for the explosion
+                    explosion_surface = pygame.Surface((current_radius * 2, current_radius * 2), pygame.SRCALPHA)
+
+                    # Draw multiple circles with different colors for the explosion effect
+                    pygame.draw.circle(explosion_surface, (255, 165, 0, alpha), (current_radius, current_radius), current_radius)  # Orange
+                    pygame.draw.circle(explosion_surface, (255, 0, 0, alpha), (current_radius, current_radius), int(current_radius * 0.7))  # Red
+                    pygame.draw.circle(explosion_surface, (255, 255, 0, alpha), (current_radius, current_radius), int(current_radius * 0.4))  # Yellow
+
+                    # Draw the explosion
+                    screen.blit(explosion_surface, (screen_x - current_radius, screen_y - current_radius))
+
+        # Create and add the explosion effect
+        explosion = ExplosionEffect(x, y, radius)
+        self.effects.append(explosion)
+
     def _render_debug_info(self, screen, fps):
         """Render debug information on the screen"""
         # Get music status for debug info
@@ -716,15 +680,17 @@ class GameplayState(GameState):
             f"Tile Position: ({int(self.player.x // TILE_SIZE)}, {int(self.player.y // TILE_SIZE)})",
             f"On Object: {self.player.is_on_object}",
             f"Speed Multiplier: {self.player.debug_speed_multiplier:.1f}",
-            f"Active Zombies: {len(self.zombie_spawner.get_zombies())}",
-            f"Game Time: {self.zombie_spawner.game_time:.1f}s",
-            f"Spawn Rate: {self.zombie_spawner._calculate_spawn_rate():.1f}s",
+            f"Active Zombies: {len(self.enemy_system.get_zombies())}",
+            f"Game Time: {self.enemy_system.game_time:.1f}s",
+            f"Spawn Rate: {self.enemy_system.current_spawn_rate:.1f}s",
             f"Items: {len(self.items)}",
             f"Bullets: {len(self.bullets)}",
             f"Effects: {len(self.effects)}",
-            f"Weapon: {self.player.weapon.name if self.player.weapon else 'None'}",
-            f"Ammo: {self.player.weapon.ammo}/{self.player.weapon.magazine_size if self.player.weapon else 0}",
-            f"Reloading: {self.player.weapon.is_reloading if self.player.weapon else False}",
+            f"Current Weapon Slot: {self.player.current_weapon_slot + 1}",
+            f"Current Weapon: {self.player.get_current_weapon().name if self.player.get_current_weapon() else 'None'}",
+            f"Ammo: {self.player.get_current_weapon().ammo}/{self.player.get_current_weapon().magazine_size if self.player.get_current_weapon() else 0}",
+            f"Reloading: {self.player.get_current_weapon().is_reloading if self.player.get_current_weapon() else False}",
+            f"Weapon Inventory: {', '.join([w.name if w else 'Empty' for w in self.player.weapons])}",
             f"Pickup Message: {self.pickup_message if self.pickup_timer > 0 else 'None'}",
             f"Music: {music_status['current_track'] or 'None'} ({music_status['current_category'] or 'None'})",
             f"Music Volume: {int(music_status['music_volume'] * 100)}%",
@@ -738,19 +704,7 @@ class GameplayState(GameState):
             screen.blit(debug_text, (10, y_offset))
             y_offset += DEBUG_FONT_SIZE + 5  # Add some spacing between lines
 
-    def _spawn_random_weapons(self, count):
-        """Spawn random weapons around the map"""
-        for _ in range(count):
-            # Find a random walkable position
-            while True:
-                x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
-                y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
-                if self.map_generator.is_walkable(x, y):
-                    break
-
-            # Create a random weapon at the position
-            weapon = Weapon(x, y)
-            self.weapons.append(weapon)
+    # Weapon spawning is now handled by the drop_system
 
     def _handle_game_over(self):
         """Handle game over state"""

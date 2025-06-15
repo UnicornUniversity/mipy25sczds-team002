@@ -4,15 +4,16 @@ from entities.zombies import Zombie
 from utils.constants import (
     TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT,
     INITIAL_MAX_ZOMBIES, MAX_ZOMBIES_CAP, ZOMBIE_SPAWN_RATE_INITIAL,
-    ZOMBIE_SPAWN_RATE_MIN, ZOMBIE_SPAWN_RATE_DECREASE, ZOMBIE_MAX_INCREASE_RATE,
+    ZOMBIE_SPAWN_RATE_MIN, ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL, ZOMBIE_SPAWN_RATE_DECREASE_AMOUNT,
+    ZOMBIE_MAX_INCREASE_RATE, INITIAL_ZOMBIE_COUNT,
     ZOMBIE_SPAWN_DISTANCE_MIN, ZOMBIE_SPAWN_DISTANCE_MAX
 )
 
-class ZombieSpawner:
-    """Handles zombie spawning with difficulty scaling"""
+class EnemySpawner:
+    """Handles enemy spawning with difficulty scaling"""
     
     def __init__(self, map_generator):
-        """Initialize the zombie spawner
+        """Initialize the enemy system
         
         Args:
             map_generator: Reference to the map generator for walkable tile checks
@@ -22,8 +23,9 @@ class ZombieSpawner:
         self.spawn_timer = 0  # Timer for next spawn
         self.zombies = []  # List of active zombies
         self.max_zombies = INITIAL_MAX_ZOMBIES  # Initial max zombies
-        self.base_spawn_rate = ZOMBIE_SPAWN_RATE_INITIAL  # Base spawn rate in seconds
-        
+        self.current_spawn_rate = ZOMBIE_SPAWN_RATE_INITIAL  # Current spawn rate in seconds
+        self.time_since_last_decrease = 0  # Time since last spawn rate decrease
+
         # Calculate minimum spawn distance to be outside visible area
         # Use screen diagonal as minimum distance to ensure spawning outside view
         screen_diagonal = math.sqrt(WINDOW_WIDTH**2 + WINDOW_HEIGHT**2)
@@ -33,6 +35,24 @@ class ZombieSpawner:
         # Calculate map boundaries in pixels
         self.map_width_px = int(MAP_WIDTH * TILE_SIZE)
         self.map_height_px = int(MAP_HEIGHT * TILE_SIZE)
+        
+        # Spawn initial zombies
+        self._spawn_initial_zombies()
+        
+    def _spawn_initial_zombies(self):
+        """Spawn initial zombies at game start"""
+        for _ in range(INITIAL_ZOMBIE_COUNT):
+            # Find a random position on the map
+            x = random.randint(0, self.map_width_px)
+            y = random.randint(0, self.map_height_px)
+            
+            # Ensure position is within map bounds and walkable
+            x = max(0, min(x, self.map_width_px))
+            y = max(0, min(y, self.map_height_px))
+            
+            if self.map_generator.is_walkable(x, y):
+                zombie = Zombie(x, y)
+                self.zombies.append(zombie)
         
     def update(self, dt, player_x, player_y):
         """Update spawner state and spawn new zombies if needed
@@ -48,26 +68,22 @@ class ZombieSpawner:
         # Update spawn timer
         self.spawn_timer += dt
         
-        # Calculate current spawn rate based on game time
-        current_spawn_rate = self._calculate_spawn_rate()
+        # Update time since last spawn rate decrease
+        self.time_since_last_decrease += dt
+        
+        # Decrease spawn rate every ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL seconds
+        if self.time_since_last_decrease >= ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL:
+            self.current_spawn_rate = max(ZOMBIE_SPAWN_RATE_MIN, 
+                                         self.current_spawn_rate - ZOMBIE_SPAWN_RATE_DECREASE_AMOUNT)
+            self.time_since_last_decrease = 0
         
         # Spawn new zombie if timer exceeds spawn rate and we haven't reached max zombies
-        if self.spawn_timer >= current_spawn_rate and len(self.zombies) < self.max_zombies:
+        if self.spawn_timer >= self.current_spawn_rate and len(self.zombies) < self.max_zombies:
             self._spawn_zombie(player_x, player_y)
             self.spawn_timer = 0
             
         # Update max zombies based on game time
         self.max_zombies = self._calculate_max_zombies()
-        
-    def _calculate_spawn_rate(self):
-        """Calculate current spawn rate based on game time
-        
-        Returns:
-            float: Current spawn rate in seconds
-        """
-        # Decrease spawn rate over time (minimum ZOMBIE_SPAWN_RATE_MIN seconds)
-        return max(ZOMBIE_SPAWN_RATE_MIN, 
-                  self.base_spawn_rate - (self.game_time / ZOMBIE_SPAWN_RATE_DECREASE))
         
     def _calculate_max_zombies(self):
         """Calculate maximum number of zombies based on game time
@@ -122,4 +138,4 @@ class ZombieSpawner:
             zombie: Zombie instance to remove
         """
         if zombie in self.zombies:
-            self.zombies.remove(zombie) 
+            self.zombies.remove(zombie)

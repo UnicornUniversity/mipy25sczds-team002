@@ -14,7 +14,7 @@ class MusicManager:
             pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
         
         # Music settings
-        self.music_volume = 0.7
+        self.music_volume = 0.3
         self.sfx_volume = 0.8
         self.music_enabled = True
         self.sfx_enabled = True

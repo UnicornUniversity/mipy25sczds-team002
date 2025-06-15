@@ -102,7 +102,7 @@ class Weapon:
         Returns:
             bool: True if weapon can shoot, False otherwise
         """
-        return not self.is_reloading and self.ammo > 0 and self.cooldown_timer <= 0
+        return not self.is_reloading and self.ammo > 0 >= self.cooldown_timer
 
 class Pistol(Weapon):
     """Pistol weapon - Balanced damage/fire rate"""
@@ -502,9 +502,16 @@ class BazookaRocket(Bullet):
         Returns:
             list: List of entities hit by the explosion
         """
-        # In a more complete implementation, this would check for entities within
-        # the explosion radius and return them for damage calculation
-
-        # For now, just mark the bullet as expired
+        # Mark the bullet as expired
         self.distance_traveled = self.max_distance
-        return []
+
+        # In a real implementation, we would check for entities within the explosion radius
+        # and return them for damage calculation. However, since we don't have direct access
+        # to the entity list here, we'll return the explosion position and radius, and let
+        # the game state handle the actual damage application.
+
+        return {
+            'position': (self.x, self.y),
+            'radius': self.explosion_radius,
+            'damage': self.damage
+        }

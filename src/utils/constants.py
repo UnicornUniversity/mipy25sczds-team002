@@ -26,17 +26,19 @@ ZOMBIE_OBSTACLE_COLLISION_RADIUS = 16  # Radius for zombie-obstacle collision
 
 # Speeds
 PLAYER_SPEED = 200  # pixels per second
-ENEMY_SPEED = 100
+ZOMBIE_SPEED = 100
 TOUGH_ZOMBIE_SPEED = 70  # Slower than regular zombies
 OBJECT_SPEED_MULTIPLIER = 0.6  # Speed multiplier when moving over objects
 
-# Zombie Spawning
-INITIAL_MAX_ZOMBIES = 1000  # Initial maximum number of zombies
-MAX_ZOMBIES_CAP = 3000  # Maximum cap for zombies
-ZOMBIE_SPAWN_RATE_INITIAL = 5.0  # Initial spawn rate in seconds
-ZOMBIE_SPAWN_RATE_MIN = 0.5  # Minimum spawn rate in seconds
-ZOMBIE_SPAWN_RATE_DECREASE = 60.0  # Time in seconds to decrease spawn rate
+# Enemy Spawning
+INITIAL_MAX_ZOMBIES = 200  # Initial maximum number of zombies
+MAX_ZOMBIES_CAP = 200  # Maximum cap for zombies
+ZOMBIE_SPAWN_RATE_INITIAL = 4.0  # Initial spawn rate in seconds
+ZOMBIE_SPAWN_RATE_MIN = 1.0  # Minimum spawn rate in seconds
+ZOMBIE_SPAWN_RATE_DECREASE_INTERVAL = 10.0  # Time in seconds between spawn rate decreases
+ZOMBIE_SPAWN_RATE_DECREASE_AMOUNT = 0.3  # Amount to decrease spawn rate by each interval
 ZOMBIE_MAX_INCREASE_RATE = 30.0  # Time in seconds to increase max zombies
+INITIAL_ZOMBIE_COUNT = 10  # Number of zombies to spawn at game start
 ZOMBIE_SPAWN_DISTANCE_MIN = 0.8  # Minimum spawn distance multiplier (relative to screen diagonal)
 ZOMBIE_SPAWN_DISTANCE_MAX = 1.2  # Maximum spawn distance multiplier (relative to screen diagonal)
 
@@ -50,10 +52,6 @@ ZOMBIE_ATTACK_COOLDOWN = 1.0  # Seconds between zombie attacks
 ZOMBIE_ATTACK_RANGE = 30  # Distance at which zombie can attack player
 ZOMBIE_ATTACK_DURATION = 0.3  # Duration of attack animation
 ZOMBIE_ATTACK_KNOCKBACK = 50  # How far to knock back player when hit
-
-# Background
-DOT_SIZE = 2
-DOT_SPACING = 50
 
 # Camera
 CAMERA_LERP = 0.1  # Camera smoothing factor (0-1)
@@ -141,7 +139,7 @@ BAZOOKA_MAGAZINE_SIZE = 1
 BAZOOKA_RELOAD_TIME = 4.0  # seconds
 BAZOOKA_COOLDOWN = 2.0  # seconds between shots
 BAZOOKA_BULLET_COLOR = BROWN
-BAZOOKA_EXPLOSION_RADIUS = 100  # pixels
+BAZOOKA_EXPLOSION_RADIUS = 150  # pixels
 BAZOOKA_BULLET_SPEED = 300  # slower bullet
 
 # General weapon settings

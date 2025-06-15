@@ -41,8 +41,15 @@ class CollisionSystem:
         dy = entity1.y + entity1.height/2 - (entity2.y + entity2.height/2)
         distance = (dx * dx + dy * dy) ** 0.5
 
+        # Increase pickup radius for items and weapons
+        pickup_radius_multiplier = 1.0
+
+        # Check if either entity is an item (has item_type attribute)
+        if hasattr(entity1, 'item_type') or hasattr(entity2, 'item_type'):
+            pickup_radius_multiplier = 2.0  # Double the pickup radius for items
+
         # Check if distance is less than sum of radii (using width as diameter)
-        return distance < (entity1.width + entity2.width) / 2
+        return distance < (entity1.width + entity2.width) / 2 * pickup_radius_multiplier
 
     def check_entity_list_collision(self, entity, entity_list):
         """Check if an entity is colliding with any entity in a list.
@@ -150,7 +157,8 @@ class CollisionSystem:
 
         return new_x, new_y, False
 
-    def check_zombie_collisions(self, zombie, zombies):
+    @staticmethod
+    def check_zombie_collisions(zombie, zombies):
         """Check and resolve collisions between zombies.
 
         Args:
@@ -173,7 +181,7 @@ class CollisionSystem:
 
             # If zombies are too close, push them apart
             min_distance = ZOMBIE_COLLISION_RADIUS * 2
-            if distance < min_distance and distance > 0:  # Avoid division by zero
+            if min_distance > distance > 0:  # Avoid division by zero
                 # Calculate push direction and force
                 push_x = dx / distance
                 push_y = dy / distance

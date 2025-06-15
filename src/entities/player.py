@@ -1,7 +1,7 @@
 import pygame
 import math
 from entities.entity import Entity
-from systems.weapons import Pistol
+from systems.weapons import Pistol, Shotgun, AssaultRifle, SniperRifle, Bazooka
 from utils.constants import RED, PLAYER_SIZE, PLAYER_SPEED, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, PLAYER_MAX_HEALTH
 from utils.sprite_loader import get_sprite, get_texture
 from systems import collisions
@@ -26,8 +26,10 @@ class Player(Entity):
         self.is_invulnerable = False  # Flag for temporary invulnerability after taking damage
         self.invulnerability_timer = 0  # Timer for invulnerability
 
-        # Weapon handling
-        self.weapon = Pistol()  # Start with a pistol
+        # Weapon inventory (slots 1-5)
+        self.weapons = [None] * 5  # Initialize with 5 empty slots
+        self.weapons[0] = Pistol()  # Start with a pistol in slot 1
+        self.current_weapon_slot = 0  # Current active weapon slot (0-4)
         self.aim_angle = 0  # Angle in radians (0 = right, pi/2 = down)
 
         # Animation tracking for sprites
@@ -120,13 +122,14 @@ class Player(Entity):
         self.x = max(0, min(self.x, map_width_px - self.width))
         self.y = max(0, min(self.y, map_height_px - self.height))
 
-        # Update weapon
-        if self.weapon:
-            self.weapon.update(dt)
+        # Update current weapon
+        current_weapon = self.get_current_weapon()
+        if current_weapon:
+            current_weapon.update(dt)
 
             # Handle reload with R key
             if keys[pygame.K_r]:
-                self.weapon.reload()
+                current_weapon.reload()
 
         # Call parent update to update rect
         super().update(dt)
@@ -179,25 +182,99 @@ class Player(Entity):
         # Calculate angle (atan2 returns angle in radians)
         self.aim_angle = math.atan2(dy, dx)
 
+    def get_current_weapon(self):
+        """Get the current weapon from the inventory
+
+        Returns:
+            Weapon or None: The current weapon, or None if no weapon in the current slot
+        """
+        if 0 <= self.current_weapon_slot < len(self.weapons):
+            return self.weapons[self.current_weapon_slot]
+        return None
+
+    def switch_weapon(self, slot):
+        """Switch to a weapon in the specified slot
+
+        Args:
+            slot (int): The slot to switch to (0-4)
+
+        Returns:
+            bool: True if successfully switched, False if the slot is empty or invalid
+        """
+        if 0 <= slot < len(self.weapons) and self.weapons[slot] is not None:
+            self.current_weapon_slot = slot
+            return True
+        return False
+
+    def add_weapon(self, weapon, auto_switch=True):
+        """Add a weapon to the inventory
+
+        Args:
+            weapon: The weapon to add
+            auto_switch (bool): Whether to automatically switch to the new weapon if it's better
+
+        Returns:
+            bool: True if successfully added, False if inventory is full
+        """
+        # Find the first empty slot
+        for i in range(len(self.weapons)):
+            if self.weapons[i] is None:
+                self.weapons[i] = weapon
+
+                # Auto-switch to the new weapon if it's better than the current one
+                if auto_switch:
+                    current_weapon = self.get_current_weapon()
+                    if current_weapon is None:
+                        self.current_weapon_slot = i
+                    else:
+                        # Compare weapon types using the hierarchy
+                        from entities.items import Weapon
+                        current_type = None
+                        new_type = None
+
+                        # Determine current weapon type
+                        for weapon_type in Weapon.WEAPON_HIERARCHY:
+                            if weapon_type in current_weapon.name.lower():
+                                current_type = weapon_type
+                                break
+
+                        # Determine new weapon type
+                        for weapon_type in Weapon.WEAPON_HIERARCHY:
+                            if weapon_type in weapon.name.lower():
+                                new_type = weapon_type
+                                break
+
+                        # Switch if new weapon is better
+                        if current_type and new_type:
+                            current_index = Weapon.WEAPON_HIERARCHY.index(current_type)
+                            new_index = Weapon.WEAPON_HIERARCHY.index(new_type)
+                            if new_index > current_index:
+                                self.current_weapon_slot = i
+
+                return True
+
+        return False
+
     def shoot(self):
         """Attempt to shoot a bullet
 
         Returns:
             Bullet or None: A new bullet if shot was successful, None otherwise
         """
-        if self.weapon:
+        current_weapon = self.get_current_weapon()
+        if current_weapon:
             # Auto-reload if magazine is empty and not already reloading
-            if self.weapon.ammo <= 0 and not self.weapon.is_reloading:
-                self.weapon.reload()
+            if current_weapon.ammo <= 0 and not current_weapon.is_reloading:
+                current_weapon.reload()
 
-            if self.weapon.can_shoot():
+            if current_weapon.can_shoot():
                 # Calculate bullet spawn position (slightly in front of player in aim direction)
                 spawn_distance = self.width // 2 + 5  # 5 pixels in front of player edge
                 spawn_x = self.x + self.width // 2 + math.cos(self.aim_angle) * spawn_distance
                 spawn_y = self.y + self.height // 2 + math.sin(self.aim_angle) * spawn_distance
 
                 # Shoot the weapon
-                return self.weapon.shoot(spawn_x, spawn_y, self.aim_angle)
+                return current_weapon.shoot(spawn_x, spawn_y, self.aim_angle)
 
         return None
 
@@ -216,9 +293,12 @@ class Player(Entity):
         center_x = screen_x + self.width // 2
         center_y = screen_y + self.height // 2
 
+        # Get current weapon
+        current_weapon = self.get_current_weapon()
+
         # Get player weapon sprite that rotates with aim
         # Use reload sprite if player is reloading
-        if self.weapon and self.weapon.is_reloading:
+        if current_weapon and current_weapon.is_reloading:
             weapon_sprite = get_texture('survivor', 'survivor1_reload')
         else:
             weapon_sprite = get_texture('survivor', 'survivor1_machine')
@@ -226,7 +306,6 @@ class Player(Entity):
         # We'll use the weapon sprite as the main player sprite
         if weapon_sprite:
                 # Convert aim angle from radians to degrees for rotation
-                # Subtract 180 degrees (90 for default orientation + 90 for left rotation)
                 rotation_angle = math.degrees(-self.aim_angle)
 
                 # Rotate the weapon sprite
@@ -242,6 +321,9 @@ class Player(Entity):
 
                 # Draw the rotated weapon sprite
                 screen.blit(rotated_weapon, (weapon_x, weapon_y))
+
+                # Draw weapon inventory UI
+                self._render_weapon_inventory(screen)
         else:
             # Fallback: draw circle if sprite not available
             if self.is_on_object:
@@ -260,3 +342,60 @@ class Player(Entity):
                 end_x = center_x + math.cos(self.aim_angle) * line_length
                 end_y = center_y + math.sin(self.aim_angle) * line_length
                 pygame.draw.line(screen, (0, 0, 0), (center_x, center_y), (end_x, end_y), 2)
+
+    def _render_weapon_inventory(self, screen):
+        """Render the weapon inventory UI
+
+        Args:
+            screen (pygame.Surface): Screen to render on
+        """
+        # Create a font for the weapon names
+        font = pygame.font.Font(None, 24)
+
+        # Define the position and size of the inventory UI
+        ui_x = 10
+        ui_y = screen.get_height() - 40
+        slot_width = 100
+        slot_height = 30
+        padding = 5
+
+        # Draw each weapon slot
+        for i in range(len(self.weapons)):
+            # Calculate slot position
+            slot_x = ui_x + i * (slot_width + padding)
+            slot_y = ui_y
+
+            # Draw slot background (highlight current slot)
+            if i == self.current_weapon_slot:
+                slot_color = (200, 200, 0)  # Yellow for current slot
+            else:
+                slot_color = (100, 100, 100)  # Gray for other slots
+
+            # Draw slot rectangle
+            pygame.draw.rect(screen, slot_color, (slot_x, slot_y, slot_width, slot_height))
+            pygame.draw.rect(screen, (0, 0, 0), (slot_x, slot_y, slot_width, slot_height), 2)  # Black border
+
+            # Draw weapon name if slot is not empty
+            if self.weapons[i] is not None:
+                # Get weapon name
+                weapon_name = self.weapons[i].name
+
+                # Render weapon name
+                text = font.render(f"{i+1}: {weapon_name}", True, (0, 0, 0))
+
+                # Center text in slot
+                text_x = slot_x + (slot_width - text.get_width()) // 2
+                text_y = slot_y + (slot_height - text.get_height()) // 2
+
+                # Draw text
+                screen.blit(text, (text_x, text_y))
+            else:
+                # Draw empty slot text
+                text = font.render(f"{i+1}: Empty", True, (0, 0, 0))
+
+                # Center text in slot
+                text_x = slot_x + (slot_width - text.get_width()) // 2
+                text_y = slot_y + (slot_height - text.get_height()) // 2
+
+                # Draw text
+                screen.blit(text, (text_x, text_y))

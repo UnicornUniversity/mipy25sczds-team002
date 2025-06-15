@@ -1,230 +1,132 @@
 import pygame
 import random
-import math
 
-class Effect:
-    """Base class for visual effects"""
-    
-    def __init__(self, x, y, duration=0.5):
-        """Initialize the effect
-        
-        Args:
-            x (float): X position
-            y (float): Y position
-            duration (float): Duration in seconds
-        """
+
+class MuzzleFlash:
+    """Simple muzzle flash effect"""
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.duration = duration
-        self.timer = duration
-        self.finished = False
-    
-    def update(self, dt):
-        """Update the effect
-        
-        Args:
-            dt (float): Time delta in seconds
-        """
-        self.timer -= dt
-        if self.timer <= 0:
-            self.finished = True
-    
-    def render(self, screen, camera_offset=(0, 0)):
-        """Render the effect
-        
-        Args:
-            screen (pygame.Surface): Screen to render on
-            camera_offset (tuple): Camera offset (x, y)
-        """
-        pass
+        self.lifetime = 0.1  # Very short flash
+        self.age = 0
 
-class MuzzleFlash(Effect):
-    """Muzzle flash effect when a weapon is fired"""
-    
-    def __init__(self, x, y, angle, color=(255, 255, 0), size=10, duration=0.1):
-        """Initialize the muzzle flash
-        
-        Args:
-            x (float): X position
-            y (float): Y position
-            angle (float): Angle in radians
-            color (tuple): RGB color tuple
-            size (int): Size of the flash
-            duration (float): Duration in seconds
-        """
-        super().__init__(x, y, duration)
-        self.angle = angle
-        self.color = color
-        self.size = size
-        self.alpha = 255  # Start fully opaque
-    
     def update(self, dt):
-        """Update the muzzle flash
-        
-        Args:
-            dt (float): Time delta in seconds
-        """
-        super().update(dt)
-        
-        # Fade out over time
-        self.alpha = int(255 * (self.timer / self.duration))
-    
-    def render(self, screen, camera_offset=(0, 0)):
-        """Render the muzzle flash
-        
-        Args:
-            screen (pygame.Surface): Screen to render on
-            camera_offset (tuple): Camera offset (x, y)
-        """
-        # Calculate screen position
-        screen_x = self.x - camera_offset[0]
-        screen_y = self.y - camera_offset[1]
-        
-        # Create a surface with per-pixel alpha
-        flash_surface = pygame.Surface((self.size * 2, self.size * 2), pygame.SRCALPHA)
-        
-        # Draw the flash as a triangle pointing in the direction of the angle
-        points = [
-            (self.size, self.size),  # Center
-            (self.size + math.cos(self.angle) * self.size * 2, self.size + math.sin(self.angle) * self.size * 2),  # Tip
-            (self.size + math.cos(self.angle + 0.5) * self.size, self.size + math.sin(self.angle + 0.5) * self.size),  # Side point
-            (self.size + math.cos(self.angle - 0.5) * self.size, self.size + math.sin(self.angle - 0.5) * self.size)   # Side point
-        ]
-        
-        # Draw the flash with the current alpha
-        pygame.draw.polygon(flash_surface, (*self.color, self.alpha), points)
-        
-        # Blit the surface to the screen
-        screen.blit(flash_surface, (screen_x - self.size, screen_y - self.size))
+        self.age += dt
+        return self.age < self.lifetime
 
-class BulletImpact(Effect):
-    """Bullet impact effect when a bullet hits something"""
-    
-    def __init__(self, x, y, color=(255, 255, 255), size=5, duration=0.3):
-        """Initialize the bullet impact
-        
-        Args:
-            x (float): X position
-            y (float): Y position
-            color (tuple): RGB color tuple
-            size (int): Size of the impact
-            duration (float): Duration in seconds
-        """
-        super().__init__(x, y, duration)
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            # Simple yellow circle for muzzle flash
+            screen_x = int(self.x - camera_offset[0])
+            screen_y = int(self.y - camera_offset[1])
+            radius = int(8 * (1 - self.age / self.lifetime))  # Shrinking
+            if radius > 0:
+                pygame.draw.circle(screen, (255, 255, 0), (screen_x, screen_y), radius)
+
+
+class BulletImpact:
+    """Simple bullet impact effect"""
+    def __init__(self, x, y, color=(255, 255, 255)):
+        self.x = x
+        self.y = y
         self.color = color
-        self.size = size
+        self.lifetime = 0.2
+        self.age = 0
+
+    def update(self, dt):
+        self.age += dt
+        return self.age < self.lifetime
+
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            # Simple spark effect
+            screen_x = int(self.x - camera_offset[0])
+            screen_y = int(self.y - camera_offset[1])
+            alpha = int(255 * (1 - self.age / self.lifetime))
+            color_with_alpha = (*self.color, alpha)
+
+            # Draw small cross for impact
+            pygame.draw.line(screen, self.color, (screen_x-3, screen_y), (screen_x+3, screen_y), 2)
+            pygame.draw.line(screen, self.color, (screen_x, screen_y-3), (screen_x, screen_y+3), 2)
+
+
+class BloodSplatter:
+    """Enhanced blood splatter effect with multiple particles"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.lifetime = 0.8  # Longer lifetime for more dramatic effect
+        self.age = 0
+
+        # Create multiple blood particles for a less dramatic effect
         self.particles = []
-        
-        # Create particles
-        for _ in range(10):
-            angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(50, 100)
-            self.particles.append({
-                'x': x,
-                'y': y,
-                'vx': math.cos(angle) * speed,
-                'vy': math.sin(angle) * speed,
-                'size': random.uniform(1, 3)
-            })
-    
-    def update(self, dt):
-        """Update the bullet impact
-        
-        Args:
-            dt (float): Time delta in seconds
-        """
-        super().update(dt)
-        
-        # Update particles
-        for particle in self.particles:
-            particle['x'] += particle['vx'] * dt
-            particle['y'] += particle['vy'] * dt
-            particle['size'] -= dt * 5  # Shrink over time
-    
-    def render(self, screen, camera_offset=(0, 0)):
-        """Render the bullet impact
-        
-        Args:
-            screen (pygame.Surface): Screen to render on
-            camera_offset (tuple): Camera offset (x, y)
-        """
-        # Calculate alpha based on remaining time
-        alpha = int(255 * (self.timer / self.duration))
-        
-        # Render particles
-        for particle in self.particles:
-            if particle['size'] <= 0:
-                continue
-                
-            # Calculate screen position
-            screen_x = particle['x'] - camera_offset[0]
-            screen_y = particle['y'] - camera_offset[1]
-            
-            # Draw particle
-            pygame.draw.circle(screen, (*self.color, alpha), (int(screen_x), int(screen_y)), int(particle['size']))
+        num_particles = random.randint(3, 6)  # Fewer particles
 
-class BloodSplatter(Effect):
-    """Blood splatter effect when a zombie takes damage"""
-    
-    def __init__(self, x, y, color=(255, 0, 0), size=8, duration=0.5):
-        """Initialize the blood splatter
-        
-        Args:
-            x (float): X position
-            y (float): Y position
-            color (tuple): RGB color tuple
-            size (int): Size of the splatter
-            duration (float): Duration in seconds
-        """
-        super().__init__(x, y, duration)
-        self.color = color
-        self.size = size
-        self.drops = []
-        
-        # Create blood drops
-        for _ in range(15):
-            angle = random.uniform(0, 2 * math.pi)
-            speed = random.uniform(30, 80)
-            self.drops.append({
-                'x': x,
-                'y': y,
-                'vx': math.cos(angle) * speed,
-                'vy': math.sin(angle) * speed,
-                'size': random.uniform(2, 4)
+        for _ in range(num_particles):
+            # Random offset from center (smaller area)
+            offset_x = random.randint(-8, 8)
+            offset_y = random.randint(-8, 8)
+
+            # Random size (smaller)
+            size = random.randint(1, 4)
+
+            # Random lifetime offset
+            lifetime_offset = random.uniform(-0.1, 0.1)
+
+            # Random color variation (darker to brighter red)
+            red = random.randint(120, 180)
+
+            self.particles.append({
+                'x': self.x + offset_x,
+                'y': self.y + offset_y,
+                'size': size,
+                'lifetime_offset': lifetime_offset,
+                'color': (red, 0, 0)
             })
-    
+
+        # Add a central smaller splatter
+        self.particles.append({
+            'x': self.x,
+            'y': self.y,
+            'size': random.randint(3, 6),  # Smaller central splatter
+            'lifetime_offset': 0,
+            'color': (150, 0, 0)
+        })
+
     def update(self, dt):
-        """Update the blood splatter
-        
-        Args:
-            dt (float): Time delta in seconds
-        """
-        super().update(dt)
-        
-        # Update blood drops
-        for drop in self.drops:
-            drop['x'] += drop['vx'] * dt
-            drop['y'] += drop['vy'] * dt
-            
-            # Slow down over time (simulate gravity and friction)
-            drop['vx'] *= 0.95
-            drop['vy'] *= 0.95
-    
-    def render(self, screen, camera_offset=(0, 0)):
-        """Render the blood splatter
-        
-        Args:
-            screen (pygame.Surface): Screen to render on
-            camera_offset (tuple): Camera offset (x, y)
-        """
-        # Calculate alpha based on remaining time
-        alpha = int(255 * (self.timer / self.duration))
-        
-        # Render blood drops
-        for drop in self.drops:
-            # Calculate screen position
-            screen_x = drop['x'] - camera_offset[0]
-            screen_y = drop['y'] - camera_offset[1]
-            
-            # Draw blood drop
-            pygame.draw.circle(screen, (*self.color, alpha), (int(screen_x), int(screen_y)), int(drop['size']))
+        self.age += dt
+        return self.age < self.lifetime
+
+    def render(self, screen, camera_offset):
+        if self.age < self.lifetime:
+            for particle in self.particles:
+                # Calculate particle lifetime with offset
+                particle_lifetime = self.lifetime + particle['lifetime_offset']
+                if self.age < particle_lifetime:
+                    # Calculate screen position
+                    screen_x = int(particle['x'] - camera_offset[0])
+                    screen_y = int(particle['y'] - camera_offset[1])
+
+                    # Calculate alpha and size based on age
+                    alpha = int(255 * (1 - self.age / particle_lifetime))
+                    size_multiplier = 1.0 + (self.age / particle_lifetime)  # Grow over time
+                    radius = int(particle['size'] * size_multiplier)
+
+                    # Create surface with alpha for transparency
+                    blood_surface = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)
+
+                    # Draw blood particle with alpha
+                    color_with_alpha = (*particle['color'], alpha)
+                    pygame.draw.circle(blood_surface, color_with_alpha, (radius, radius), radius)
+
+                    # Add some splatter effect (random small circles around the main one)
+                    if random.random() < 0.5 and radius > 2:  # 50% chance for additional splatter
+                        for _ in range(1):  # Only one additional splatter
+                            splatter_x = random.randint(0, radius*2)
+                            splatter_y = random.randint(0, radius*2)
+                            splatter_size = random.randint(1, 2)  # Smaller splatter
+                            pygame.draw.circle(blood_surface, color_with_alpha, 
+                                              (splatter_x, splatter_y), splatter_size)
+
+                    # Blit to screen
+                    screen.blit(blood_surface, (screen_x - radius, screen_y - radius))

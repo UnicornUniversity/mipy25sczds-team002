@@ -83,27 +83,20 @@ class Item(Entity):
             weapon_type (str, optional): Specific weapon type to create, if None a random item is created
 
         Returns:
-            Item: A random item (HealthPack or Weapon)
+            Item: A random item (HealthPack, Powerup, or Weapon)
         """
         # If a specific weapon type is provided, create that weapon
         if weapon_type is not None:
             return Weapon(x, y, weapon_type)
 
-        # Otherwise, randomly choose between health pack and weapon
-        item_type = random.choice(['health', 'weapon'])
+        # Otherwise, randomly choose between health pack and powerup
+        # Weapons are now spawned in sequence by the game state
+        item_type = random.choice(['health', 'powerup'])
 
         if item_type == 'health':
             return HealthPack(x, y)
         else:
-            # Randomly select a weapon type from the hierarchy
-            # Lower tier weapons are more common
-            weights = [0.5, 0.25, 0.15, 0.07, 0.03]  # Probabilities for each weapon tier
-            weapon_type = random.choices(
-                Weapon.WEAPON_HIERARCHY,
-                weights=weights[:len(Weapon.WEAPON_HIERARCHY)],
-                k=1
-            )[0]
-            return Weapon(x, y, weapon_type)
+            return Powerup(x, y)
 
 class HealthPack(Item):
     """Health pack item that restores player health"""
@@ -152,7 +145,7 @@ class Weapon(Item):
     """Weapon item that can be equipped by the player"""
 
     # Define weapon hierarchy (from lowest to highest)
-    WEAPON_HIERARCHY = ["pistol", "shotgun", "assault_rifle", "sniper_rifle", "bazooka"]
+    WEAPON_HIERARCHY = ["pistol", "shotgun", "sniper_rifle", "assault_rifle", "bazooka"]
 
     # Define weapon colors for display (used as fallback if sprite is not available)
     WEAPON_COLORS = {
@@ -220,24 +213,24 @@ class Weapon(Item):
         from systems.weapons import Pistol, Shotgun, AssaultRifle, SniperRifle, Bazooka
 
         # Create the appropriate weapon based on weapon_type
+        new_weapon = None
         if self.weapon_type == "pistol":
-            player.weapon = Pistol()
+            new_weapon = Pistol()
         elif self.weapon_type == "shotgun":
-            player.weapon = Shotgun()
+            new_weapon = Shotgun()
         elif self.weapon_type == "assault_rifle":
-            player.weapon = AssaultRifle()
+            new_weapon = AssaultRifle()
         elif self.weapon_type == "sniper_rifle":
-            player.weapon = SniperRifle()
+            new_weapon = SniperRifle()
         elif self.weapon_type == "bazooka":
-            player.weapon = Bazooka()
+            new_weapon = Bazooka()
         else:
             # Default to pistol if weapon type is unknown
-            player.weapon = Pistol()
+            new_weapon = Pistol()
 
-        # Spawn a new weapon of the next tier
-        from game.game_state import GameplayState
-        if GameplayState.instance:
-            GameplayState.instance.spawn_next_tier_weapon(self.weapon_type)
+        # Add the weapon to the player's inventory
+        if new_weapon:
+            player.add_weapon(new_weapon, auto_switch=True)
 
         return f"Picked up {self.weapon_type.replace('_', ' ').title()}"
 
@@ -302,6 +295,8 @@ class Powerup(Item):
         """
         self.picked_up = True
 
-        # In a more complete implementation, this would apply a temporary effect to the player
+        # TODO: Implement actual powerup effects
+        # For now, just provide a small health boost as placeholder
+        player.health = min(player.health + 10, 100)
 
         return "Picked up Powerup"

@@ -1,7 +1,7 @@
 class Settings:
     def __init__(self):
         self.sound_enabled = True
-        self.music_volume = 0.7
+        self.music_volume = 0.3
         self.sfx_volume = 0.8
         self.fullscreen = False
         self.difficulty = "normal"

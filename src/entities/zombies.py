@@ -2,7 +2,7 @@ import pygame
 import math
 from entities.entity import Entity
 from utils.constants import (
-    BLACK, ENEMY_SIZE, ENEMY_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, TILE_GRASS,
+    BLACK, ENEMY_SIZE, ZOMBIE_SPEED, OBJECT_SPEED_MULTIPLIER, TILE_OBJECT, TILE_GRASS,
     ZOMBIE_HEALTH, ZOMBIE_DAMAGE, ZOMBIE_ATTACK_COOLDOWN,
     TOUGH_ZOMBIE_HEALTH, TOUGH_ZOMBIE_DAMAGE, TOUGH_ZOMBIE_SPEED,
     ZOMBIE_ATTACK_RANGE, ZOMBIE_ATTACK_DURATION, ZOMBIE_ATTACK_KNOCKBACK,
@@ -22,7 +22,7 @@ class Zombie(Entity):
             y (float): Initial y position
         """
         super().__init__(x, y, ENEMY_SIZE, ENEMY_SIZE, BLACK)
-        self.speed = ENEMY_SPEED
+        self.speed = ZOMBIE_SPEED
         self.is_on_object = False  # Flag to track if zombie is on an object
         self.map_generator = None  # Will be set by GameplayState
         self.health = ZOMBIE_HEALTH
