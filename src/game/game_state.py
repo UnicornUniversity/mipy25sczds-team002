@@ -86,13 +86,13 @@ class MenuState(GameState):
                 else:
                     sound_manager.play_music("music_menu")
 
-            elif event.key == pygame.K_PLUS or event.key == pygame.K_EQUALS:
+            elif event.key == pygame.K_PLUS or event.key == pygame.K_KP_PLUS:
             # Increase volume
                 current_volume = sound_manager.music_volume  # Změněno z get_volume()
                 sound_manager.set_music_volume(min(1.0, current_volume + 0.1))
 
-            elif event.key == pygame.K_MINUS:
-                current_volume = sound_manager.music_volume  # Změněno z get_volume()
+            elif event.key == pygame.K_MINUS or event.key == pygame.K_KP_MINUS:
+                current_volume = sound_manager.music_volume
                 sound_manager.set_music_volume(max(0.0, current_volume - 0.1))
 
         return None
@@ -221,11 +221,14 @@ class GameplayState(GameState):
             if event.key == pygame.K_ESCAPE:
                 return "menu"  # Changed from "pause" to "menu"
             elif event.key == pygame.K_r:
+                sound_manager.play_sound("effects_reload")
                 self.player.reload()
             elif event.key == pygame.K_q:
                 self.player.cycle_weapons_backward()
             elif event.key == pygame.K_e:
                 self.player.cycle_weapons_forward()
+            elif event.key == pygame.K_m:
+                sound_manager.stop_music()
             elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5]:
                 slot = event.key - pygame.K_1
                 self.player.switch_weapon(slot)
@@ -295,6 +298,9 @@ class GameplayState(GameState):
                     blood_y = zombie.y + zombie.height / 2
                     animation_system.add_effect('blood_splatter', blood_x, blood_y, 0.8)
 
+                    # Play hit flesh sound when we hit a zombie
+                    sound_manager.play_sound("effects_hit_flesh")
+
                     if zombie.take_damage(bullet.damage):
                         self.enemy_system.zombies.remove(zombie)
                         # Use zombie-specific score value
@@ -343,7 +349,7 @@ class GameplayState(GameState):
                     sound_name = sound_mapping.get(weapon_type)
                     if sound_name:
                         from systems.audio import sound_manager
-                        sound_manager.play_sound(f"weapons_{sound_name}")
+                        sound_manager.play_sound(f"weapons_{sound_name}", volume=0.4)
 
                 if isinstance(projectiles, list):
                     # Multiple projectiles (shotgun)
@@ -426,6 +432,9 @@ class GameplayState(GameState):
         new_zombie = zombie_class(spawn_x, spawn_y)
         self.enemy_system.zombies.append(new_zombie)
 
+        # Play zombie spawn/groan sound
+        sound_manager.play_random_sound("zombies_zombie_groad")
+
         # Show notification
         message = f"Spawned {zombie_type_name} zombie! (Total: {len(self.enemy_system.zombies)})"
         print(message)  # Console output
@@ -449,6 +458,9 @@ class GameplayState(GameState):
                     # Add blood splatter when player is actually hit
                     animation_system.add_effect('blood_splatter', self.player.x, self.player.y, 0.8)
 
+                    # Play hit flesh sound when zombie hits player
+                    sound_manager.play_sound("effects_hit_flesh")
+
                 # Check if player died AFTER the attack
                 if self.player.is_dead():
                     return "game_over"
@@ -457,8 +469,10 @@ class GameplayState(GameState):
         for item in picked_items:
             animation_system.add_effect('explosion', item.x, item.y, 0.5, size=0.5)
 
-        return None
+            # Play powerup sound when collecting items
+            sound_manager.play_sound("effects_powerup-41954")
 
+        return None
 
     def _render_ui(self, screen, fps):
         """Render game UI using GameUI system"""

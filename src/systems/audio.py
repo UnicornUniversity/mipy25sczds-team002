@@ -1,5 +1,6 @@
 import pygame
 import os
+import random
 from typing import Dict, Optional
 
 
@@ -25,12 +26,16 @@ class SoundManager:
         # Sound cache - loads all sounds at startup
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
 
+        # Sound groups for cycling (e.g., hit_flesh_1, hit_flesh_2, hit_flesh_3)
+        self.sound_groups: Dict[str, list] = {}
+
         # Load all sounds
         self._load_all_sounds()
+        self._organize_sound_groups()
 
     def _load_all_sounds(self):
         """Load all sounds from assets/sounds directory recursively"""
-        sounds_dir = "../assets/sounds"
+        sounds_dir = "../assets/sounds"  # Opravená cesta
 
         if not os.path.exists(sounds_dir):
             print(f"Warning: Sounds directory '{sounds_dir}' not found.")
@@ -56,23 +61,52 @@ class SoundManager:
 
         print(f"Total sounds loaded: {len(self.sounds)}")
 
+    def _organize_sound_groups(self):
+        """Organize sounds into groups for random/cycling playback"""
+        # Group sounds by base name (e.g., hit_flesh_1, hit_flesh_2 -> hit_flesh group)
+        for sound_name in self.sounds.keys():
+            # Check if sound name ends with a number
+            parts = sound_name.split('_')
+            if len(parts) >= 2 and parts[-1].isdigit():
+                # Remove the number to get base name
+                base_name = '_'.join(parts[:-1])
+
+                if base_name not in self.sound_groups:
+                    self.sound_groups[base_name] = []
+
+                self.sound_groups[base_name].append(sound_name)
+
+        # Sort each group for consistent ordering
+        for group in self.sound_groups.values():
+            group.sort()
+
+        print(f"Sound groups created: {list(self.sound_groups.keys())}")
+
     def play_sound(self, sound_name: str, volume: Optional[float] = None) -> bool:
         """Play a sound effect
 
         Args:
-            sound_name (str): Name of the sound (e.g., 'weapons_pistol', 'music_menu')
+            sound_name (str): Name of the sound (e.g., 'weapons_pistol', 'effects_hit_flesh')
             volume (float, optional): Volume override for this sound (0.0 to 1.0)
 
         Returns:
             bool: True if sound was played successfully
         """
-        if sound_name not in self.sounds:
-            print(f"Sound not found: {sound_name}")
+        # Check if this is a grouped sound (e.g., effects_hit_flesh)
+        if sound_name in self.sound_groups:
+            # Play a random sound from the group
+            actual_sound_name = random.choice(self.sound_groups[sound_name])
+        else:
+            actual_sound_name = sound_name
+
+        if actual_sound_name not in self.sounds:
+            print(f"Sound not found: {sound_name} (tried: {actual_sound_name})")
             print(f"Available sounds: {list(self.sounds.keys())}")
+            print(f"Available groups: {list(self.sound_groups.keys())}")
             return False
 
         try:
-            sound = self.sounds[sound_name]
+            sound = self.sounds[actual_sound_name]
 
             # Set volume
             if volume is not None:
@@ -84,8 +118,20 @@ class SoundManager:
             return True
 
         except pygame.error as e:
-            print(f"Failed to play sound {sound_name}: {e}")
+            print(f"Failed to play sound {actual_sound_name}: {e}")
             return False
+
+    def play_random_sound(self, base_name: str, volume: Optional[float] = None) -> bool:
+        """Play a random sound from a group
+
+        Args:
+            base_name (str): Base name of the sound group (e.g., 'effects_hit_flesh')
+            volume (float, optional): Volume override for this sound
+
+        Returns:
+            bool: True if sound was played successfully
+        """
+        return self.play_sound(base_name, volume)
 
     def play_music(self, music_name: str, loop: bool = True, fade_in: float = 0.0) -> bool:
         """Play background music using pygame.mixer.music
@@ -109,7 +155,7 @@ class SoundManager:
         try:
             # For music, we need to load the actual file path, not the Sound object
             # Find the original file path
-            sounds_dir = "../assets/sounds"
+            sounds_dir = "../assets/sounds"  # Opravená cesta
             for root, dirs, files in os.walk(sounds_dir):
                 for filename in files:
                     if filename.lower().endswith(('.wav', '.mp3', '.ogg')):
@@ -214,6 +260,10 @@ class SoundManager:
         """Get list of all available sounds"""
         return list(self.sounds.keys())
 
+    def get_available_groups(self) -> list:
+        """Get list of all available sound groups"""
+        return list(self.sound_groups.keys())
+
     def update(self, dt: float):
         """Update the sound manager"""
         # Check if music has stopped playing
@@ -227,7 +277,7 @@ class SoundManager:
                 pass
 
 
-# Global sound manager instance
+# Global sound manager instance - PŘIDÁNO!
 sound_manager = SoundManager()
 
 # Convenience aliases for backward compatibility

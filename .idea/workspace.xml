@@ -4,32 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions.">
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/bullet_hit.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_1.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_2.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/hit_flesh_3.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/powerup-41954.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/reload.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/zombie_1.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/sounds/effects/zombie_2.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/potential_improvements.md" afterDir="false" />
+    <list default="true" id="15d086a1-3ab5-4a47-81e6-734a4983c51b" name="Changes" comment="Remove outdated asset and music system documentation, refactor audio system to use unified `SoundManager`, update fast zombie speed ranges, and clean up `item_types` sprite mapping.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/assault.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/weapons/assault.mp3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/bazooka_fire.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/weapons/bazooka_fire.mp3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/explosion.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/effects/explosion.mp3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/sounds/weapons/shot-rifle-39-mm-37542.mp3" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/asset_management_system.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/development_guidelines.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/development_guidelines.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/game_design.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/game_design.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/music_system.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/player.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/entities/zombies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/entities/zombies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/effects/bullet_hit.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/effects/bullet_hit.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/effects/powerup-41954.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/effects/powerup.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/effects/reload.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/effects/reload.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/zombies/zombie_1.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/zombies/zombie_groad_1.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/zombies/zombie_2.mp3" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/zombies/zombie_groan_2.mp3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/sounds/zombies/zombie_groan.wav" beforeDir="false" afterPath="$PROJECT_DIR$/assets/sounds/zombies/zombie_groan_3.wav" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game/game_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/game/game_state.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/systems/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/audio.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/systems/items/item_types.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/systems/items/item_types.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/math_utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_entities.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_game.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_texture_atlas.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -100,6 +88,7 @@
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\sprites\weapon" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\zombies" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\effects" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\sounds\music" />
       <recent name="C:\Users\alois\PycharmProjects\mipy25sczds-team002\assets\images\spritesheets" />
@@ -162,7 +151,7 @@
       <workItem from="1749917479841" duration="1833000" />
       <workItem from="1749974882267" duration="3000" />
       <workItem from="1749974895935" duration="16018000" />
-      <workItem from="1749991064275" duration="16460000" />
+      <workItem from="1749991064275" duration="18164000" />
     </task>
     <task id="LOCAL-00001" summary="Initialize project: add game framework, constants, settings, and basic game states.">
       <option name="closed" value="true" />
@@ -316,7 +305,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750005177493</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Remove outdated asset and music system documentation, refactor audio system to use unified `SoundManager`, update fast zombie speed ranges, and clean up `item_types` sprite mapping.">
+      <option name="closed" value="true" />
+      <created>1750008036761</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1750008036761</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -352,25 +349,26 @@
     <MESSAGE value="Remove unused visual effect classes and refactor item sprite handling: delete `MuzzleFlash`, `BulletImpact`, and `BloodSplatter` classes; implement `_load_sprite` methods for `HealthPack`, `AmmoPack`, `Powerup`, and `WeaponPickup` with scaling; adjust game state to center player and utilize `GameUI` for HUD rendering." />
     <MESSAGE value="Introduce Infinite Ammo item type and refactor powerup effects: replace `AmmoPack` with `InfiniteAmmoPack`, implement `_load_sprite` methods for powerups and items, adjust `apply_effect` processes to use `item_effects`, add debug spawning for zombies and items, and refine constants for zombie and item systems." />
     <MESSAGE value="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions." />
-    <option name="LAST_COMMIT_MESSAGE" value="Redesign game states and scoring: add high scores state with file persistence, allow name input on game over screen, update constants to rebalance zombies, refine collision and movement logic, and streamline state transitions." />
+    <MESSAGE value="Remove outdated asset and music system documentation, refactor audio system to use unified `SoundManager`, update fast zombie speed ranges, and clean up `item_types` sprite mapping." />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove outdated asset and music system documentation, refactor audio system to use unified `SoundManager`, update fast zombie speed ranges, and clean up `item_types` sprite mapping." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/game/game_state.py</url>
-          <line>558</line>
+          <line>572</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/systems/audio.py</url>
-          <line>104</line>
+          <line>150</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750007441271" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/mipy25sczds_team002$main.coverage" NAME="main Coverage Results" MODIFIED="1750009632131" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
 </project>
